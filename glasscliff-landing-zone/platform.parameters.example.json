@@ -5,6 +5,9 @@
     "policyEffect": {
       "value": "Audit"
     },
+    "assignmentResourceGroups": {
+      "value": []
+    },
     "allowedLocations": {
       "value": [
         "eastus2"

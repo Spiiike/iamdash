@@ -22,6 +22,7 @@ These come from the app settings `main.bicep` merges into the web app:
 - `EXPENSES_OIDC_*`, `LAB_STORAGE_ACCOUNT` and `LAB_TABLE_*` for Expenses.
 - `LAB_LIFECYCLE_ENDPOINT`, `LAB_OPERATOR_KEY` and `LAB_SYNTHETIC_SCENARIO_CONTAINER` for the dashboard.
 - `RECON_*` for reconciliation.
+- `LZ_MANAGEMENT_GROUP` (default `glasscliff`) and, only when the guardrails are assigned to a single resource group, `LZ_POLICY_RESOURCE_GROUP` for the landing zone page.
 
 The dashboard calls the lifecycle API server-side. The operator key never reaches the browser, and every response goes through `dashboard/mask.js`, which is an allowlist. Without the operator key, live runs and the demo are off, and replays still work.
 

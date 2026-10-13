@@ -84,6 +84,30 @@ az deployment mg what-if --management-group-id glasscliff -l eastus2 -f 2-platfo
 az deployment mg create  --management-group-id glasscliff -l eastus2 -f 2-platform.bicep -p @platform.parameters.json -n glasscliff-platform
 ```
 
+### Guardrails on one resource group instead of the whole group
+
+A management-group assignment covers every subscription beneath it, which gets in
+the way when other work shares the subscription. To apply the same guardrails to
+named resource groups only, list them (they must already exist):
+
+```bash
+az deployment mg create --management-group-id glasscliff -l eastus2 -f 2-platform.bicep \
+  -p @platform.parameters.json -p assignmentResourceGroups='["rg-glasscliff-lab"]' -n glasscliff-platform
+```
+
+The initiative stays at the management group; only the assignment moves down. If
+a management-group assignment already exists, remove it first so the two don't
+overlap: `az policy assignment delete -n glasscliff-baseline --scope /providers/Microsoft.Management/managementGroups/glasscliff`.
+
+Then tell the site where to ask. A policy on one resource group is only evaluated
+for requests made at that resource group, so the "try to break the rules" check
+needs the same scope. Set `LZ_POLICY_RESOURCE_GROUP` on the web app to the first
+name in the list:
+
+```bash
+az webapp config appsettings set -g rg-basic-webapp -n wetcliff --settings LZ_POLICY_RESOURCE_GROUP=rg-glasscliff-lab
+```
+
 ### 3. Read the findings
 
 Policy evaluation takes up to about 30 minutes after assignment. Then:

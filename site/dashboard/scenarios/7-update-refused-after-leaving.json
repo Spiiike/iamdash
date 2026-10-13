@@ -1,0 +1,41 @@
+{
+  "id": "update-refused-after-leaving",
+  "order": 7,
+  "title": "An update refused after the person had left",
+  "description": "Okta refuses profile changes for a deprovisioned user. The run fails at the Okta step and nothing is sent downstream.",
+  "provenance": {
+    "kind": "recorded",
+    "capturedAt": "2026-10-13",
+    "outcome": "failed"
+  },
+  "recordedAt": "2026-10-13T17:45:25.766Z",
+  "operation": {
+    "operationId": "8208087153608-21f6e5",
+    "type": "transfer",
+    "target": "replay.person@example.test",
+    "status": "failed",
+    "summary": "",
+    "error": "This operation is not allowed in the user's current status.",
+    "created": "2026-10-13T17:34:06.391Z",
+    "updated": "2026-10-13T17:34:07.309Z",
+    "steps": [
+      {
+        "seq": 1,
+        "step": "okta.lookup",
+        "outcome": "succeeded",
+        "detail": "id (hidden), status DEPROVISIONED",
+        "durationMs": 573,
+        "started": "2026-10-13T17:34:06.401Z"
+      },
+      {
+        "seq": 2,
+        "step": "okta.updateProfile",
+        "outcome": "failed",
+        "detail": "This operation is not allowed in the user's current status.",
+        "durationMs": 309,
+        "started": "2026-10-13T17:34:06.992Z"
+      }
+    ],
+    "scim": []
+  }
+}

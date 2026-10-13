@@ -85,7 +85,7 @@ function interpret(raw) {
   return { denied: list.some((f) => /deny/i.test(f.effect)), findings: list };
 }
 
-function createChecker({ arm, subscriptionId: fixedSub, getSubscriptionId, log = console, ttlMs = 10 * 60 * 1000, now = () => Date.now() }) {
+function createChecker({ arm, subscriptionId: fixedSub, getSubscriptionId, resourceGroup = '', log = console, ttlMs = 10 * 60 * 1000, now = () => Date.now() }) {
   const cache = new Map();
 
   async function check(input) {
@@ -95,7 +95,12 @@ function createChecker({ arm, subscriptionId: fixedSub, getSubscriptionId, log =
     if (hit && now() - hit.at < ttlMs) return { choice, ...hit.value, cached: true };
     const sub = fixedSub || (await getSubscriptionId());
     if (!sub) throw Object.assign(new Error('no subscription visible to check against'), { status: 503 });
-    const raw = await arm.call('POST', `/subscriptions/${sub}/providers/Microsoft.PolicyInsights/checkPolicyRestrictions?api-version=2023-03-01`, requestBody(choice));
+    // A policy assigned to one resource group is only evaluated for requests made
+    // at that resource group, so when the guardrails are scoped that way the
+    // check has to ask there too. A subscription-level request would answer
+    // "allowed" for everything.
+    const scope = resourceGroup ? `/subscriptions/${sub}/resourceGroups/${encodeURIComponent(resourceGroup)}` : `/subscriptions/${sub}`;
+    const raw = await arm.call('POST', `${scope}/providers/Microsoft.PolicyInsights/checkPolicyRestrictions?api-version=2023-03-01`, requestBody(choice));
     const value = interpret(raw);
     cache.set(key, { at: now(), value });
     log.info?.(`[landing-zone] policy check ${key}: ${value.denied ? 'denied' : 'allowed'} (${value.findings.map((f) => f.id).join(', ') || 'no findings'})`);

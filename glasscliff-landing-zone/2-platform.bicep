@@ -13,6 +13,9 @@ targetScope = 'managementGroup'
 @allowed(['Audit', 'Deny', 'Disabled'])
 param policyEffect string = 'Audit'
 
+@description('Resource groups the guardrails apply to. Empty (the default) assigns them at the management group, so every subscription beneath it is covered. List one or more names to assign them to just those resource groups in workloadSubscriptionId instead; they must already exist.')
+param assignmentResourceGroups array = []
+
 @description('Regions workloads may use.')
 param allowedLocations array = ['eastus2']
 
@@ -192,7 +195,8 @@ resource baseline 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = {
   }
 }
 
-resource baselineAssignment 'Microsoft.Authorization/policyAssignments@2024-04-01' = {
+// Management group scope (default): every subscription beneath it inherits the rules.
+resource baselineAssignment 'Microsoft.Authorization/policyAssignments@2024-04-01' = if (empty(assignmentResourceGroups)) {
   name: 'glasscliff-baseline'
   properties: {
     displayName: 'Glasscliff baseline guardrails'
@@ -205,6 +209,18 @@ resource baselineAssignment 'Microsoft.Authorization/policyAssignments@2024-04-0
     }
   }
 }
+
+// Resource group scope: the same initiative, assigned only where you say.
+// Use this when a management-group assignment would get in the way of other work.
+module rgAssignments 'modules/baseline-assignment.bicep' = [for rg in assignmentResourceGroups: {
+  name: 'glasscliff-baseline-${rg}'
+  scope: resourceGroup(workloadSubscriptionId, rg)
+  params: {
+    initiativeId: baseline.id
+    policyEffect: policyEffect
+    allowedLocations: allowedLocations
+  }
+}]
 
 // ------------------------------------------------------------------ access --
 var readerRole = 'acdd72a7-3385-48ef-bd42-f606fba81ae7' // Reader (verify: az role definition list --name Reader --query [].name -o tsv)
@@ -231,6 +247,8 @@ module subscriptionPlatform 'modules/subscription-platform.bicep' = {
   }
 }
 
-output policyAssignmentId string = baselineAssignment.id
+output policyAssignmentScope string = empty(assignmentResourceGroups) ? 'managementGroup' : 'resourceGroup'
+output managementGroupAssignmentId string = empty(assignmentResourceGroups) ? baselineAssignment.id : ''
+output resourceGroupAssignmentIds array = [for (rg, i) in assignmentResourceGroups: rgAssignments[i].outputs.assignmentId]
 output effect string = policyEffect
 output logAnalyticsWorkspaceId string = subscriptionPlatform.outputs.workspaceId

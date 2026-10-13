@@ -167,6 +167,24 @@ const page = (title, body) => `<!doctype html><title>${title}</title><main>${bod
     assert.equal(c.method, 'POST'); assert.equal(c.body.includeAuditEffect, true);
   });
 
+  await t('when the guardrails are scoped to a resource group, the check asks at that resource group', async () => {
+    const st = { graphCalls: 0, calls: [] };
+    const { s: s4, B: B4 } = await mk(st, { policyResourceGroup: 'rg-glasscliff-lab' });
+    await post(B4, { kind: 'publicip', region: 'westus2' }, '203.0.113.20');
+    const c = st.calls.find((x) => x.path.includes('checkPolicyRestrictions'));
+    s4.close();
+    assert.ok(c.path.startsWith(`/subscriptions/${SUB}/resourceGroups/rg-glasscliff-lab/providers/Microsoft.PolicyInsights/checkPolicyRestrictions?api-version=`), c.path);
+  });
+
+  await t('an odd resource group name is ignored rather than put in a URL', async () => {
+    const st = { graphCalls: 0, calls: [] };
+    const { s: s5, B: B5 } = await mk(st, { policyResourceGroup: '../x?y=1' });
+    await post(B5, { kind: 'publicip', region: 'westus2' }, '203.0.113.21');
+    const c = st.calls.find((x) => x.path.includes('checkPolicyRestrictions'));
+    s5.close();
+    assert.ok(c.path.startsWith(`/subscriptions/${SUB}/providers/`), c.path);
+  });
+
   await t('a missing permission is explained, not leaked', async () => {
     const st = { graphCalls: 0, calls: [], checkStatus: 403 };
     const { s: s3, B: B3 } = await mk(st);

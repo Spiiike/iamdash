@@ -17,11 +17,11 @@ const { createChecker, normalize, DEFAULTS } = require('./check');
 const { landingZonePage } = require('./views');
 const { aboutPage } = require('./about');
 
-function createLandingZoneRouter({ page, arm, log = console, managementGroup = process.env.LZ_MANAGEMENT_GROUP || 'glasscliff', perIpLimit = 20, windowMs = 5 * 60 * 1000 } = {}) {
+function createLandingZoneRouter({ page, arm, log = console, managementGroup = process.env.LZ_MANAGEMENT_GROUP || 'glasscliff', policyResourceGroup = process.env.LZ_POLICY_RESOURCE_GROUP || '', perIpLimit = 20, windowMs = 5 * 60 * 1000 } = {}) {
   if (typeof page !== 'function') throw new Error('createLandingZoneRouter needs the site page() layout');
   const client = arm || createArmClient();
   const overview = createOverview({ arm: client, managementGroup, log });
-  const checker = createChecker({ arm: client, log, getSubscriptionId: async () => (await overview.get()).subscriptionId });
+  const checker = createChecker({ arm: client, log, resourceGroup: /^[\w.()-]{1,90}$/.test(policyResourceGroup) ? policyResourceGroup : '', getSubscriptionId: async () => (await overview.get()).subscriptionId });
   const router = express.Router();
   const hits = new Map(); // ip -> [timestamps]
 

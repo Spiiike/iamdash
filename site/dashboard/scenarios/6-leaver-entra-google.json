@@ -1,0 +1,80 @@
+{
+  "id": "leaver-entra-google",
+  "order": 6,
+  "title": "Someone leaves: Entra ID and Google confirm",
+  "description": "Terminated in Okta; Entra ID disabled and Google suspended, both confirmed by reading the directories. This person had no Expenses account, so that check was skipped.",
+  "provenance": {
+    "kind": "recorded",
+    "capturedAt": "2026-10-13",
+    "outcome": "succeeded"
+  },
+  "recordedAt": "2026-10-13T17:45:14.804Z",
+  "operation": {
+    "operationId": "8208087428873-f8568a",
+    "type": "terminate",
+    "target": "replay.person@example.test",
+    "status": "succeeded",
+    "summary": "Terminated replay.person@example.test; confirmed in Entra ID and Google",
+    "created": "2026-10-13T17:29:31.126Z",
+    "updated": "2026-10-13T17:29:50.357Z",
+    "steps": [
+      {
+        "seq": 1,
+        "step": "okta.lookup",
+        "outcome": "succeeded",
+        "detail": "id (hidden), status PASSWORD_EXPIRED",
+        "durationMs": 548,
+        "started": "2026-10-13T17:29:31.133Z"
+      },
+      {
+        "seq": 2,
+        "step": "okta.clearSessions",
+        "outcome": "succeeded",
+        "detail": "Okta sessions ended, OAuth tokens revoked",
+        "durationMs": 357,
+        "started": "2026-10-13T17:29:32.081Z"
+      },
+      {
+        "seq": 3,
+        "step": "okta.deactivate",
+        "outcome": "succeeded",
+        "detail": "status DEPROVISIONED",
+        "durationMs": 361,
+        "started": "2026-10-13T17:29:32.444Z"
+      },
+      {
+        "seq": 4,
+        "step": "verify.expensesAccountDisabled",
+        "outcome": "skipped",
+        "detail": "user has no Expenses account",
+        "durationMs": 17,
+        "started": "2026-10-13T17:29:32.812Z"
+      },
+      {
+        "seq": 5,
+        "step": "verify.entraAccountDisabled",
+        "outcome": "succeeded",
+        "detail": "account disabled",
+        "durationMs": 12490,
+        "started": "2026-10-13T17:29:32.812Z"
+      },
+      {
+        "seq": 6,
+        "step": "verify.googleAccountSuspended",
+        "outcome": "succeeded",
+        "detail": "account suspended",
+        "durationMs": 17509,
+        "started": "2026-10-13T17:29:32.812Z"
+      },
+      {
+        "seq": 7,
+        "step": "verify.expensesSessionsEnded",
+        "outcome": "succeeded",
+        "detail": "no live Expenses sessions",
+        "durationMs": 20,
+        "started": "2026-10-13T17:29:50.330Z"
+      }
+    ],
+    "scim": []
+  }
+}
