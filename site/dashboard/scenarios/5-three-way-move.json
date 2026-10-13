@@ -1,0 +1,81 @@
+{
+  "id": "three-way-move",
+  "order": 5,
+  "title": "Someone moves, everywhere",
+  "description": "A new title and department in Okta, checked as it lands in all three. Real timings from 13 Oct 2026.",
+  "provenance": {"kind": "recorded", "capturedAt": "2026-10-13"},
+  "recordedAt": "2026-10-13T09:45:07.200Z",
+  "operation": {
+    "operationId": "8208115974250-e29d26",
+    "type": "transfer",
+    "target": "replay.person@example.test",
+    "status": "succeeded",
+    "summary": "Transferred replay.person@example.test in Okta; confirmed on status check",
+    "created": "2026-10-13T09:33:45.749Z",
+    "updated": "2026-10-13T09:43:45.001Z",
+    "steps": [
+      {
+        "seq": 1,
+        "step": "okta.lookup",
+        "outcome": "succeeded",
+        "detail": "id (hidden), status PROVISIONED",
+        "durationMs": 503,
+        "started": "2026-10-13T09:33:45.757Z"
+      },
+      {
+        "seq": 2,
+        "step": "okta.updateProfile",
+        "outcome": "succeeded",
+        "detail": "set department, title",
+        "durationMs": 407,
+        "started": "2026-10-13T09:33:46.278Z"
+      },
+      {
+        "seq": 3,
+        "step": "verify.expensesAccountUpdated",
+        "outcome": "succeeded",
+        "detail": "SCIM update received",
+        "durationMs": 6027,
+        "started": "2026-10-13T09:33:46.691Z"
+      },
+      {
+        "seq": 4,
+        "step": "verify.entraAccountUpdated",
+        "outcome": "succeeded",
+        "detail": "title and department updated",
+        "durationMs": 8329,
+        "started": "2026-10-13T09:33:46.691Z"
+      },
+      {
+        "seq": 5,
+        "step": "verify.googleAccountUpdated",
+        "outcome": "pending",
+        "detail": "title and department not updated yet; check the attribute is mapped in Okta's push",
+        "durationMs": 94541,
+        "started": "2026-10-13T09:33:46.691Z"
+      },
+      {
+        "seq": 6,
+        "step": "verify.recheck",
+        "outcome": "succeeded",
+        "detail": "Google change confirmed on status check",
+        "durationMs": 9,
+        "started": "2026-10-13T09:43:44.983Z"
+      }
+    ],
+    "scim": [
+      {
+        "step": "scim.replaceUser",
+        "httpStatus": 200,
+        "outcome": "succeeded",
+        "at": "2026-10-13T09:33:50.3164499Z"
+      },
+      {
+        "step": "scim.patchUser",
+        "httpStatus": 200,
+        "outcome": "succeeded",
+        "at": "2026-10-13T09:35:25.6884649Z"
+      }
+    ]
+  }
+}

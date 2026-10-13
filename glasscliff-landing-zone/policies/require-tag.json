@@ -1,0 +1,14 @@
+{
+  "displayName": "Glasscliff: resources must carry a required tag",
+  "description": "Every resource says who owns it and which environment it belongs to, so cost and incidents have somewhere to go.",
+  "mode": "Indexed",
+  "metadata": { "category": "Glasscliff guardrails", "version": "1.0.0" },
+  "parameters": {
+    "tagName": { "type": "String", "metadata": { "displayName": "Tag name" } },
+    "effect": { "type": "String", "allowedValues": ["Audit", "Deny", "Disabled"], "defaultValue": "Audit", "metadata": { "displayName": "Effect" } }
+  },
+  "policyRule": {
+    "if": { "field": "[concat('tags[', parameters('tagName'), ']')]", "exists": "false" },
+    "then": { "effect": "[parameters('effect')]" }
+  }
+}

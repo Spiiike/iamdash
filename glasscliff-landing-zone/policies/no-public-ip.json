@@ -1,0 +1,13 @@
+{
+  "displayName": "Glasscliff: no standalone public IP addresses",
+  "description": "Public IPs are the most common way a VM ends up on the internet by accident. Internet-facing services go through a managed front door instead.",
+  "mode": "Indexed",
+  "metadata": { "category": "Glasscliff guardrails", "version": "1.0.0" },
+  "parameters": {
+    "effect": { "type": "String", "allowedValues": ["Audit", "Deny", "Disabled"], "defaultValue": "Audit", "metadata": { "displayName": "Effect" } }
+  },
+  "policyRule": {
+    "if": { "field": "type", "equals": "Microsoft.Network/publicIPAddresses" },
+    "then": { "effect": "[parameters('effect')]" }
+  }
+}

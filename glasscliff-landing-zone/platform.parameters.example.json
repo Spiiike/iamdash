@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "policyEffect": {
+      "value": "Audit"
+    },
+    "allowedLocations": {
+      "value": [
+        "eastus2"
+      ]
+    },
+    "workloadSubscriptionId": {
+      "value": "<subscription id: az account show --query id -o tsv>"
+    },
+    "location": {
+      "value": "eastus2"
+    },
+    "alertEmail": {
+      "value": "<budget alert address>"
+    },
+    "monthlyBudget": {
+      "value": 30
+    },
+    "webAppPrincipalId": {
+      "value": "<principal id of the wetcliff web app identity>"
+    }
+  }
+}

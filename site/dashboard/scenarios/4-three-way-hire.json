@@ -1,0 +1,95 @@
+{
+  "id": "three-way-hire",
+  "order": 4,
+  "title": "Someone joins, everywhere",
+  "description": "Okta creates them, then pushes them to Expenses, Entra ID and Google at once. Real timings from 13 Oct 2026.",
+  "provenance": {"kind": "recorded", "capturedAt": "2026-10-13"},
+  "recordedAt": "2026-10-13T09:45:06.573Z",
+  "operation": {
+    "operationId": "8208115995007-f64437",
+    "type": "hire",
+    "target": "replay.person@example.test",
+    "status": "succeeded",
+    "summary": "Hired replay.person@example.test; confirmed in Expenses, Entra ID and Google",
+    "created": "2026-10-13T09:33:24.992Z",
+    "updated": "2026-10-13T09:33:45.088Z",
+    "steps": [
+      {
+        "seq": 1,
+        "step": "okta.lookup",
+        "outcome": "succeeded",
+        "detail": "not found, ok to create",
+        "durationMs": 274,
+        "started": "2026-10-13T09:33:25.028Z"
+      },
+      {
+        "seq": 2,
+        "step": "okta.createUser",
+        "outcome": "succeeded",
+        "detail": "id (hidden), status PROVISIONED",
+        "durationMs": 352,
+        "started": "2026-10-13T09:33:25.311Z"
+      },
+      {
+        "seq": 3,
+        "step": "okta.assignExpenses",
+        "outcome": "succeeded",
+        "detail": "assigned to app (hidden)",
+        "durationMs": 610,
+        "started": "2026-10-13T09:33:25.734Z"
+      },
+      {
+        "seq": 4,
+        "step": "okta.addToGroup",
+        "outcome": "succeeded",
+        "detail": "added to the 2 groups assigned to Entra ID and Google",
+        "durationMs": 1202,
+        "started": "2026-10-13T09:33:26.355Z"
+      },
+      {
+        "seq": 5,
+        "step": "verify.expensesAccountCreated",
+        "outcome": "succeeded",
+        "detail": "SCIM account is active",
+        "durationMs": 3021,
+        "started": "2026-10-13T09:33:27.564Z"
+      },
+      {
+        "seq": 6,
+        "step": "verify.entraAccountCreated",
+        "outcome": "succeeded",
+        "detail": "account enabled, federation anchor set",
+        "durationMs": 8218,
+        "started": "2026-10-13T09:33:27.565Z"
+      },
+      {
+        "seq": 7,
+        "step": "verify.googleAccountCreated",
+        "outcome": "succeeded",
+        "detail": "account active in /Okta Users",
+        "durationMs": 17517,
+        "started": "2026-10-13T09:33:27.565Z"
+      }
+    ],
+    "scim": [
+      {
+        "step": "scim.createUser",
+        "httpStatus": 201,
+        "outcome": "succeeded",
+        "at": "2026-10-13T09:33:27.6055519Z"
+      },
+      {
+        "step": "scim.replaceUser",
+        "httpStatus": 200,
+        "outcome": "succeeded",
+        "at": "2026-10-13T09:33:50.3164499Z"
+      },
+      {
+        "step": "scim.patchUser",
+        "httpStatus": 200,
+        "outcome": "succeeded",
+        "at": "2026-10-13T09:35:25.6884649Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "wetcliff",
+  "version": "1.3.0",
+  "private": true,
+  "description": "Glasscliff lab site: home page, /labs/identity landing, Glasscliff Expenses OIDC login, public operations dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/smoke.js && node test/expenses.test.js && node test/dashboard.test.js && node test/landingzone.test.js && node test/recon.test.js && node test/replays.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.0",
+    "@azure/identity": "^4.5.0",
+    "express": "^4.21.2",
+    "jose": "^5.9.6",
+    "@azure/storage-blob": "^12.33.0"
+  }
+}

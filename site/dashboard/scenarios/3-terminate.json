@@ -1,0 +1,26 @@
+{
+  "id": "terminate",
+  "order": 3,
+  "title": "Someone leaves",
+  "description": "Okta ends their sessions and deactivates them. Okta's SCIM call then deactivates the Expenses account, which ends their open Expenses session. The timings are from a real run on 2026-09-20.",
+  "provenance": {"kind": "recorded", "capturedAt": "2026-09-20"},
+  "operation": {
+    "operationId": "8210082972644-c3e5a7",
+    "type": "terminate",
+    "target": "riley.example@glasscliff.test",
+    "status": "succeeded",
+    "summary": "Terminated riley.example@glasscliff.test; access removed",
+    "created": "2026-09-20T15:10:27.355Z",
+    "updated": "2026-09-20T15:10:34.906Z",
+    "steps": [
+      { "seq": 1, "step": "okta.lookup", "outcome": "succeeded", "detail": "id 00u17aexample00demo1, status ACTIVE", "durationMs": 555, "started": "2026-09-20T15:10:27.370Z" },
+      { "seq": 2, "step": "okta.clearSessions", "outcome": "succeeded", "detail": "Okta sessions ended, OAuth tokens revoked", "durationMs": 350, "started": "2026-09-20T15:10:27.943Z" },
+      { "seq": 3, "step": "okta.deactivate", "outcome": "succeeded", "detail": "status DEPROVISIONED", "durationMs": 537, "started": "2026-09-20T15:10:28.302Z" },
+      { "seq": 4, "step": "verify.expensesAccountDisabled", "outcome": "succeeded", "detail": "SCIM account is inactive", "durationMs": 6036, "started": "2026-09-20T15:10:28.845Z" },
+      { "seq": 5, "step": "verify.expensesSessionsEnded", "outcome": "succeeded", "detail": "no live Expenses sessions", "durationMs": 7, "started": "2026-09-20T15:10:34.892Z" }
+    ],
+    "scim": [
+      { "step": "scim.patchUser", "httpStatus": 200, "outcome": "succeeded", "at": "2026-09-20T15:10:32.266Z", "evidenceBlob": "x", "sessionsEnded": 1 }
+    ]
+  }
+}

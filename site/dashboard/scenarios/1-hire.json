@@ -1,0 +1,26 @@
+{
+  "id": "hire",
+  "order": 1,
+  "title": "Someone joins",
+  "description": "Okta creates the account and assigns Expenses. Okta then provisions the Expenses account over SCIM, and the lab confirms it arrived. Timings are illustrative.",
+  "provenance": {"kind": "illustrative"},
+  "operation": {
+    "operationId": "8210084197900-a1c3e5",
+    "type": "hire",
+    "target": "riley.example@glasscliff.test",
+    "status": "succeeded",
+    "summary": "Hired riley.example@glasscliff.test; Expenses account provisioned",
+    "created": "2026-09-20T14:50:02.100Z",
+    "updated": "2026-09-20T14:50:09.285Z",
+    "steps": [
+      { "seq": 1, "step": "okta.lookup", "outcome": "succeeded", "detail": "not found, ok to create", "durationMs": 480, "started": "2026-09-20T14:50:02.115Z" },
+      { "seq": 2, "step": "okta.createUser", "outcome": "succeeded", "detail": "id 00u17aexample00demo1, status PROVISIONED", "durationMs": 910, "started": "2026-09-20T14:50:02.600Z" },
+      { "seq": 3, "step": "okta.assignExpenses", "outcome": "succeeded", "detail": "assigned to app 0oa17scexample0demo1", "durationMs": 640, "started": "2026-09-20T14:50:03.515Z" },
+      { "seq": 4, "step": "verify.expensesAccountCreated", "outcome": "succeeded", "detail": "SCIM account 5d1e2f3a-4b5c-4d6e-8f70-81a2b3c4d5e6 is active", "durationMs": 5120, "started": "2026-09-20T14:50:04.160Z" }
+    ],
+    "scim": [
+      { "step": "scim.listUsers", "httpStatus": 200, "outcome": "succeeded", "at": "2026-09-20T14:50:05.310Z", "evidenceBlob": "x" },
+      { "step": "scim.createUser", "httpStatus": 201, "outcome": "succeeded", "at": "2026-09-20T14:50:05.742Z", "evidenceBlob": "x", "sessionsEnded": 0 }
+    ]
+  }
+}

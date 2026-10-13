@@ -1,0 +1,20 @@
+{
+  "name": "glasscliff-functions",
+  "version": "0.1.0",
+  "description": "Glasscliff Identity Lifecycle Lab - lifecycle API, SCIM 2.0 endpoint (mock Glasscliff Expenses), Entra ID / Google verification, three-way reconciliation",
+  "main": "src/functions/*.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "func start",
+    "package": "rm -f ../functions.zip && npm ci --omit=dev && zip -qr ../functions.zip . -x '*.git*' 'local.settings.json' 'test/*'",
+    "test": "node --test test/recon/*.test.js test/downstream.test.js",
+    "test:storage": "node --test test/lifecycle-downstream.test.js"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.0",
+    "@azure/functions": "^4.6.0",
+    "@azure/storage-blob": "^12.26.0"
+  }
+}

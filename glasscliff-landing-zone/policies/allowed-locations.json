@@ -1,0 +1,19 @@
+{
+  "displayName": "Glasscliff: resources must be in an allowed region",
+  "description": "Keeps workloads in the regions this platform supports. Global resources are exempt.",
+  "mode": "Indexed",
+  "metadata": { "category": "Glasscliff guardrails", "version": "1.0.0" },
+  "parameters": {
+    "allowedLocations": { "type": "Array", "metadata": { "displayName": "Allowed regions", "strongType": "location" } },
+    "effect": { "type": "String", "allowedValues": ["Audit", "Deny", "Disabled"], "defaultValue": "Audit", "metadata": { "displayName": "Effect" } }
+  },
+  "policyRule": {
+    "if": {
+      "allOf": [
+        { "field": "location", "notIn": "[parameters('allowedLocations')]" },
+        { "field": "location", "notEquals": "global" }
+      ]
+    },
+    "then": { "effect": "[parameters('effect')]" }
+  }
+}

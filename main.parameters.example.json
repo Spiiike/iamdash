@@ -1,0 +1,125 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "value": "glasscliff"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "eastus2"
+    },
+    "webAppName": {
+      "value": "wetcliff"
+    },
+    "webAppResourceGroupName": {
+      "value": "rg-basic-webapp"
+    },
+    "webAppManagedIdentityPrincipalId": {
+      "value": "<principal id: az webapp identity show -n wetcliff -g rg-basic-webapp --query principalId -o tsv>"
+    },
+    "publicHostName": {
+      "value": "projects.glasscliff.online"
+    },
+    "allowedOrigins": {
+      "value": [
+        "http://localhost:5173"
+      ]
+    },
+    "updateExistingWebAppSettings": {
+      "value": true
+    },
+    "functionPlanSku": {
+      "value": "Y1"
+    },
+    "functionRuntime": {
+      "value": "node|20"
+    },
+    "oktaOrgUrl": {
+      "value": "https://<your-org>.okta.com"
+    },
+    "oktaClientId": {
+      "value": ""
+    },
+    "oktaClientSecret": {
+      "value": ""
+    },
+    "oktaApiToken": {
+      "value": ""
+    },
+    "oktaAuthMode": {
+      "value": "SSWS"
+    },
+    "oktaExpensesAppId": {
+      "value": "<Okta app id of the Expenses SCIM app (0oa...)>"
+    },
+    "oktaAuthorizationServerId": {
+      "value": "default"
+    },
+    "expensesOidcClientId": {
+      "value": "<Okta client id of the Expenses OIDC app (0oa...)>"
+    },
+    "expensesOidcClientSecret": {
+      "value": ""
+    },
+    "scimBearerToken": {
+      "value": ""
+    },
+    "operatorApiKey": {
+      "value": ""
+    },
+    "keyVaultAdministratorObjectId": {
+      "value": "<your Entra object id: az ad signed-in-user show --query id -o tsv>"
+    },
+    "keyVaultAdministratorPrincipalType": {
+      "value": "User"
+    },
+    "maxStepRetries": {
+      "value": 3
+    },
+    "oktaEntraAppId": {
+      "value": ""
+    },
+    "oktaGoogleAppId": {
+      "value": ""
+    },
+    "oktaDownstreamGroupId": {
+      "value": ""
+    },
+    "downstreamVerify": {
+      "value": ""
+    },
+    "googleSaClientEmail": {
+      "value": ""
+    },
+    "googleSaPrivateKey": {
+      "value": ""
+    },
+    "googleAdminSubject": {
+      "value": ""
+    },
+    "reconExceptions": {
+      "value": "[]"
+    },
+    "reconManagedOu": {
+      "value": "/Okta Users"
+    },
+    "reconEnabled": {
+      "value": false
+    },
+    "entraTenantId": {
+      "value": ""
+    },
+    "entraClientId": {
+      "value": ""
+    },
+    "entraClientSecret": {
+      "value": ""
+    },
+    "reconOktaApiToken": {
+      "value": ""
+    }
+  }
+}

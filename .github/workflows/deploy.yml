@@ -1,0 +1,257 @@
+# Test everything on every push and pull request. On main, deploy the site
+# (App Service) and the Functions app, but only the half that changed.
+#
+# Expects the repo laid out as real folders, not zips:
+#   site/        the Express site (server.js, package.json, ...)
+#   functions/   the Azure Functions app (host.json, src/, package.json)
+#   main.bicep   infrastructure — validated here, deliberately NOT deployed here
+#
+# One-time setup is listed at the bottom of this file.
+
+name: ci-deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'functions/**'
+      - '**.bicep'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to deploy
+        type: choice
+        options: [both, site, functions]
+        default: both
+
+permissions:
+  contents: read
+
+# Never run two deployments at once, and never cancel one halfway through.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'          # the Functions runtime is node|20 in main.bicep
+  WEB_APP_NAME: ${{ vars.WEB_APP_NAME || 'wetcliff' }}
+  WEB_APP_RG: ${{ vars.WEB_APP_RG || 'rg-basic-webapp' }}
+  FUNCTION_APP_NAME: ${{ vars.FUNCTION_APP_NAME }}
+  FUNCTION_APP_RG: ${{ vars.FUNCTION_APP_RG }}
+
+jobs:
+  # --------------------------------------------------------------- what changed
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      site: ${{ steps.out.outputs.site }}
+      functions: ${{ steps.out.outputs.functions }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          filters: |
+            site:
+              - 'site/**'
+            functions:
+              - 'functions/**'
+      - id: out
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ inputs.target }}
+          SITE: ${{ steps.filter.outputs.site }}
+          FUNCS: ${{ steps.filter.outputs.functions }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            [ "$TARGET" = "functions" ] && SITE=false || SITE=true
+            [ "$TARGET" = "site" ] && FUNCS=false || FUNCS=true
+          fi
+          echo "site=${SITE:-false}" >> "$GITHUB_OUTPUT"
+          echo "functions=${FUNCS:-false}" >> "$GITHUB_OUTPUT"
+
+  # ----------------------------------------------------------------------- site
+  test-site:
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      # smoke, expenses, dashboard, landing zone and recon suites
+      - run: npm test
+
+      - name: Package (production dependencies only, no tests)
+        if: github.event_name != 'pull_request'
+        run: |
+          npm ci --omit=dev
+          zip -qr ../site.zip . -x 'test/*' '.git*'
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: site
+          path: site.zip
+          retention-days: 7
+
+  # ------------------------------------------------------------------ functions
+  test-functions:
+    needs: changes
+    if: needs.changes.outputs.functions == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - run: npm ci
+
+      - name: Syntax check every function
+        run: find src -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      # Reconciler and Entra ID / Google verification: no network, no storage.
+      - name: Unit tests
+        run: npm test
+
+      # Lifecycle + reconciler routes end to end against the storage emulator,
+      # with Okta, Graph and Google faked. Then the older suites, if committed.
+      - name: Start Azurite and run the storage suites
+        run: |
+          npx --yes azurite --silent --skipApiVersionCheck --location "$RUNNER_TEMP/azurite" &
+          npx --yes wait-on tcp:127.0.0.1:10002 --timeout 60000
+          npm run test:storage
+          if [ -f test/smoke.js ]; then node test/smoke.js; fi
+          if [ -f test/lifecycle.js ]; then node test/lifecycle.js; fi
+
+      - name: Package (production dependencies only)
+        if: github.event_name != 'pull_request'
+        run: |
+          npm ci --omit=dev
+          zip -qr ../functions.zip . -x '*.git*' 'local.settings.json' 'test/*'
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: functions
+          path: functions.zip
+          retention-days: 7
+
+  # ---------------------------------------------------------------------- bicep
+  # Compile only. main.bicep is not deployed from CI: it merges the web app's
+  # settings and writes Key Vault secrets from parameters that are blank in
+  # main.parameters.json, so a pipeline run could blank real values. Infra
+  # stays a deliberate, manual `az deployment` for now.
+  bicep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build every template
+        run: |
+          set -e
+          find . -name '*.bicep' -not -path './node_modules/*' -not -path '*/node_modules/*' -print0 \
+            | xargs -0 -I{} sh -c 'echo "az bicep build {}"; az bicep build --file "{}" --stdout > /dev/null'
+
+  # --------------------------------------------------------------------- deploy
+  deploy-site:
+    needs: [changes, test-site, bicep]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy to App Service
+        run: |
+          az webapp deploy \
+            --resource-group "$WEB_APP_RG" --name "$WEB_APP_NAME" \
+            --src-path site.zip --type zip --clean true
+      - name: Smoke test /healthz
+        run: |
+          host=$(az webapp show -g "$WEB_APP_RG" -n "$WEB_APP_NAME" --query defaultHostName -o tsv)
+          for i in $(seq 1 12); do
+            if curl -fsS "https://$host/healthz" | jq -e '.status == "ok"' > /dev/null; then
+              echo "healthy after attempt $i"; exit 0
+            fi
+            sleep 10
+          done
+          echo "site did not report healthy" >&2; exit 1
+
+  deploy-functions:
+    needs: [changes, test-functions, bicep]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.changes.outputs.functions == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Require the function app settings
+        run: |
+          [ -n "$FUNCTION_APP_NAME" ] && [ -n "$FUNCTION_APP_RG" ] || {
+            echo "Set repository variables FUNCTION_APP_NAME and FUNCTION_APP_RG (see the bottom of deploy.yml)." >&2
+            exit 1
+          }
+      - uses: actions/download-artifact@v4
+        with:
+          name: functions
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # Same command the functions README uses. main.bicep deliberately leaves
+      # WEBSITE_RUN_FROM_PACKAGE unset on Linux Consumption, so a zip deploy
+      # through config-zip is the supported path rather than run-from-package.
+      - name: Deploy to the Function App
+        run: |
+          az functionapp deployment source config-zip \
+            --resource-group "$FUNCTION_APP_RG" --name "$FUNCTION_APP_NAME" \
+            --src functions.zip --build-remote false
+      - name: Smoke test /api/lifecycle/health
+        run: |
+          host=$(az functionapp show -g "$FUNCTION_APP_RG" -n "$FUNCTION_APP_NAME" --query defaultHostName -o tsv)
+          # Consumption cold starts are slow, so allow about three minutes.
+          for i in $(seq 1 18); do
+            if curl -fsS "https://$host/api/lifecycle/health" > /dev/null; then
+              echo "healthy after attempt $i"; exit 0
+            fi
+            sleep 10
+          done
+          echo "function app did not answer its health check" >&2; exit 1
+
+# ------------------------------------------------------------------ one-time setup
+# 1. Sign-in without a stored secret (OIDC). Create an Entra app registration with
+#    a federated credential for this repo:
+#      subject  repo:Spiiike/iamdash:environment:production
+#    Give its service principal "Website Contributor" on the web app and on the
+#    Function App (not on the subscription).
+# 2. Repository secrets:   AZURE_CLIENT_ID  AZURE_TENANT_ID  AZURE_SUBSCRIPTION_ID
+# 3. Repository variables: FUNCTION_APP_NAME  FUNCTION_APP_RG
+#    optional:             WEB_APP_NAME (default wetcliff)  WEB_APP_RG (default rg-basic-webapp)
+#    The function app name is in the deployment output: `functionAppName`.
+# 4. Settings > Environments > production: add yourself as a required reviewer if
+#    you want a manual approval before anything goes live.

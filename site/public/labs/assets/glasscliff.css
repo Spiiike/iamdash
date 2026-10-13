@@ -1,0 +1,493 @@
+/* ---------------------------------------------------------------------------
+   Glasscliff labs — shared stylesheet
+   Served at /labs/assets/glasscliff.css
+
+   Two families, both carried over from the resume at glasscliff.online:
+   Georgia for anything a person reads, Courier New only where monospace means
+   something (a path, a state, a count). The palette is the resume's own
+   web-safe values inverted onto navy, so the two sites read as one person's.
+--------------------------------------------------------------------------- */
+
+:root{
+  --navy-lift:#11227a;
+  --navy:#000066;        /* the resume's --navy, unchanged */
+  --navy-deep:#000040;
+  --ink-deep:#000029;
+  --paper:#fffef0;       /* the resume's --paper, now the text */
+  --paper-dim:rgba(255,254,240,.78);
+  --paper-faint:rgba(255,254,240,.5);
+  --rule:rgba(255,254,240,.16);
+  --rule-soft:rgba(255,254,240,.09);
+
+  --live:#6fe3d2;        /* running / verified */
+  --warn:#ffc55c;
+  --high:#ff9e86;
+  --crit:#ff6b6b;
+  --visited:#c0a6ff;     /* links still change colour once you've read them */
+
+  /* Vendor strokes for the topology drawing. Lifted for the navy field. */
+  --okta:#9085e9;
+  --ms:#6aa9f0;
+  --goog:#5fd0a6;
+
+  --measure:72ch;
+  --gutter:clamp(18px,4vw,44px);
+}
+
+*{box-sizing:border-box}
+
+html{
+  scroll-behavior:smooth;
+  background:var(--ink-deep);
+}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+
+body{
+  margin:0;
+  min-height:100vh;
+  color:var(--paper);
+  font:16px/1.7 Georgia,'Times New Roman',serif;
+  background:
+    linear-gradient(180deg,
+      var(--navy-lift) 0%,
+      var(--navy) 34%,
+      var(--navy-deep) 70%,
+      var(--ink-deep) 100%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+}
+
+a{color:var(--paper);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+a:visited{color:var(--visited)}
+a:hover{color:var(--live);text-decoration-color:var(--live)}
+a:focus-visible{outline:2px solid var(--live);outline-offset:3px}
+
+.skip{position:absolute;left:12px;top:-60px;background:var(--paper);color:var(--navy);padding:8px 12px;z-index:5}
+.skip:focus{top:12px}
+
+.wrap{max-width:980px;margin:0 auto;padding:0 var(--gutter)}
+
+/* --- masthead ------------------------------------------------------------ */
+
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:20px;
+  padding:22px 0 18px;border-bottom:1px solid var(--rule);
+}
+.mark{
+  font:13px/1 'Courier New',monospace;letter-spacing:.14em;
+  text-decoration:none;color:var(--paper);
+}
+.mark:hover{color:var(--live)}
+.mark b{font-weight:700}
+.nav{display:flex;flex-wrap:wrap;gap:8px 20px;font:13px/1 'Courier New',monospace}
+.nav a{text-decoration:none;color:var(--paper-dim)}
+.nav a:hover{color:var(--live)}
+.nav a[aria-current="page"]{color:var(--paper);text-decoration:underline;text-underline-offset:4px}
+
+/* --- hero ---------------------------------------------------------------- */
+
+.hero{padding:clamp(44px,9vw,92px) 0 0}
+.hero h1{
+  margin:0;
+  font:400 clamp(32px,5.6vw,58px)/1.1 Georgia,serif;
+  letter-spacing:-.02em;
+  max-width:18ch;
+}
+.hero p{
+  margin:20px 0 0;max-width:62ch;
+  color:var(--paper-dim);font-size:17px;line-height:1.75;
+}
+
+/* --- the directory index (the hero element) ------------------------------ */
+
+.index{
+  margin:clamp(30px,5vw,46px) 0 0;
+  border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+  padding:14px 0;
+}
+.index-root{
+  font:13px/2.2 'Courier New',monospace;
+  color:var(--paper-faint);
+  letter-spacing:.02em;
+  padding:4px 0 2px;
+}
+/* Four children, four columns: stem, name, note, state. A listing, not a table —
+   the note column collapses before the name does. */
+.node{
+  display:grid;
+  /* Fixed in ch against the row's own monospace, so the note and state columns
+     line up down the listing while the stem still carries the indent. */
+  grid-template-columns:9ch 20ch minmax(0,1fr) auto;
+  align-items:baseline;
+  gap:0 2ch;
+  padding:3px 0;
+  font:13px/2.1 'Courier New',monospace;
+  text-decoration:none;
+  color:var(--paper);
+  border-bottom:1px solid transparent;
+}
+a.node:hover{background:rgba(255,254,240,.045);color:var(--paper)}
+a.node:hover .n-name{color:var(--live);text-decoration:underline;text-underline-offset:3px}
+a.node:focus-visible{outline:2px solid var(--live);outline-offset:-2px}
+.node.branch{color:var(--paper-dim)}
+.n-stem{color:var(--paper-faint);white-space:pre}
+.n-name{white-space:nowrap}
+.n-note{
+  font:italic 14px/1.6 Georgia,serif;
+  color:var(--paper-faint);
+  justify-self:start;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.n-state{
+  font:11px/1 'Courier New',monospace;
+  letter-spacing:.1em;
+  color:var(--paper-faint);
+  white-space:nowrap;
+}
+.n-state.live{color:var(--live)}
+.n-state.soon{color:var(--paper-faint)}
+
+/* --- the triptych -------------------------------------------------------- */
+
+.triptych{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  border-top:1px solid var(--rule);
+  margin-top:clamp(40px,7vw,76px);
+}
+.panel{
+  padding:clamp(24px,3.4vw,38px) clamp(18px,2.6vw,30px) clamp(30px,4vw,44px);
+  border-left:1px solid var(--rule-soft);
+}
+.panel:first-child{border-left:0;padding-left:0}
+.panel:last-child{padding-right:0}
+.panel .path{
+  display:block;
+  font:11px/1 'Courier New',monospace;letter-spacing:.08em;
+  color:var(--paper-faint);
+}
+.panel h2{
+  margin:14px 0 10px;
+  font:400 21px/1.25 Georgia,serif;letter-spacing:-.01em;
+}
+.panel h2 a{text-decoration:none}
+.panel h2 a:hover{text-decoration:underline;text-underline-offset:4px}
+.panel p{margin:0;color:var(--paper-dim);font-size:15px;line-height:1.75}
+
+/* --- generic prose sections ---------------------------------------------- */
+
+.section{padding:clamp(40px,6vw,70px) 0 0}
+.section h2{
+  margin:0 0 14px;font:400 clamp(21px,2.6vw,27px)/1.25 Georgia,serif;
+  letter-spacing:-.01em;
+}
+.section p{margin:0 0 15px;max-width:var(--measure);color:var(--paper-dim)}
+.section p.lede{color:var(--paper);font-size:17px}
+
+.rules{border-top:1px solid var(--rule);margin-top:clamp(36px,5vw,56px)}
+.rules dl{margin:0;display:grid;grid-template-columns:minmax(120px,170px) 1fr}
+.rules dt{
+  padding:16px 18px 16px 0;border-bottom:1px solid var(--rule-soft);
+  font:12px/1.6 'Courier New',monospace;letter-spacing:.06em;color:var(--paper);
+}
+.rules dd{
+  margin:0;padding:16px 0;border-bottom:1px solid var(--rule-soft);
+  color:var(--paper-dim);font-size:15px;
+}
+
+/* --- footer -------------------------------------------------------------- */
+
+.foot{
+  margin-top:clamp(50px,8vw,90px);
+  border-top:1px solid var(--rule);
+  padding:22px 0 46px;
+  font:12px/1.9 'Courier New',monospace;
+  color:var(--paper-faint);
+  display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between;
+}
+.foot a{color:var(--paper-dim);text-decoration:none}
+.foot a:hover{color:var(--live);text-decoration:underline}
+.foot nav{display:flex;gap:18px;flex-wrap:wrap}
+
+/* --- responsive ---------------------------------------------------------- */
+
+@media (max-width:820px){
+  .triptych{grid-template-columns:1fr}
+  .panel{border-left:0;border-top:1px solid var(--rule-soft);padding-left:0;padding-right:0}
+  .panel:first-child{border-top:0}
+}
+
+@media (max-width:620px){
+  /* The note is dropped entirely, so the row falls back to three columns. */
+  .node{grid-template-columns:9ch minmax(0,1fr) auto;gap:0 1.5ch}
+  .n-note{display:none}
+  .rules dl{grid-template-columns:1fr}
+  .rules dt{padding-bottom:4px;border-bottom:0}
+  .rules dd{padding-top:0}
+}
+
+@media (max-width:420px){
+  .masthead{flex-wrap:wrap;gap:10px}
+  .nav{gap:6px 14px}
+  .index-root,.node{font-size:12px}
+  .hero h1{font-size:30px}
+}
+
+/* ---------------------------------------------------------------------------
+   Reconciliation ledger — /labs/identity/recon
+   Same listing language as the index: hairlines, no cards, monospace only
+   where it carries meaning (a state, a count, a path).
+--------------------------------------------------------------------------- */
+
+.asof{
+  margin:22px 0 0;
+  font:12px/1.8 'Courier New',monospace;
+  color:var(--paper-faint);
+  letter-spacing:.02em;
+}
+.stale{
+  margin:14px 0 0;max-width:var(--measure);
+  border-left:2px solid var(--warn);padding-left:14px;
+  color:var(--paper-dim);font-size:15px;
+}
+
+.state{
+  font:11px/1.5 'Courier New',monospace;
+  letter-spacing:.09em;
+  white-space:nowrap;
+}
+.state.ok{color:var(--live)}
+.state.off{color:var(--paper-dim)}
+.state.dim{color:var(--paper-faint)}
+.state.warn{color:var(--warn)}
+.state.high{color:var(--high)}
+.state.crit{color:var(--crit)}
+
+.verdict{
+  margin:clamp(26px,4vw,40px) 0 0;
+  padding:16px 0;
+  border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+}
+.verdict .state{font-size:15px;letter-spacing:.04em}
+
+.counts{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-bottom:1px solid var(--rule);
+}
+.count{
+  padding:20px 18px 24px 0;
+  border-left:1px solid var(--rule-soft);
+  padding-left:18px;
+}
+.count:first-child{border-left:0;padding-left:0}
+.c-v{display:block;font:400 30px/1 Georgia,serif;letter-spacing:-.02em}
+.c-k{display:block;margin-top:7px;font-size:14px;color:var(--paper-dim)}
+.c-n{display:block;margin-top:3px;font:11px/1.5 'Courier New',monospace;color:var(--paper-faint)}
+
+.ledger{width:100%;border-collapse:collapse;margin-top:8px}
+.ledger caption{
+  text-align:left;padding:0 0 12px;
+  font:11px/1.6 'Courier New',monospace;color:var(--paper-faint);letter-spacing:.06em;
+}
+.ledger thead th{
+  text-align:left;padding:0 14px 10px 0;
+  border-bottom:1px solid var(--rule);
+  font:11px/1.4 'Courier New',monospace;letter-spacing:.09em;
+  color:var(--paper-faint);font-weight:400;
+}
+.ledger tbody th,.ledger tbody td{
+  text-align:left;vertical-align:baseline;
+  padding:13px 14px 13px 0;
+  border-bottom:1px solid var(--rule-soft);
+  font-weight:400;
+}
+.ledger tr.person.flagged th .pid{color:var(--paper)}
+.pid{font:12px/1.5 'Courier New',monospace;letter-spacing:.03em;color:var(--paper-dim)}
+.ledger .dir .qual{
+  display:block;margin-top:4px;
+  font:11px/1.5 'Courier New',monospace;color:var(--paper-faint);
+}
+.ledger tr.detail td{padding:0 0 15px;border-bottom:1px solid var(--rule-soft)}
+.ledger tr.person.flagged th,
+.ledger tr.person.flagged td{border-bottom:0}
+
+.findings{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.findings.standalone{margin-top:18px;border-top:1px solid var(--rule);padding-top:18px}
+.findings li{display:grid;grid-template-columns:8ch 1fr;gap:0 2ch;align-items:baseline}
+.f-text{font:15px/1.6 Georgia,serif;color:var(--paper-dim);max-width:70ch}
+.rule-id,.ref{
+  display:inline-block;margin-top:3px;
+  font:11px/1.5 'Courier New',monospace;color:var(--paper-faint);letter-spacing:.04em;
+}
+.rule-id{display:block}
+.ref{margin-left:1.5ch}
+
+@media (max-width:820px){
+  .counts{grid-template-columns:repeat(2,1fr)}
+  .count:nth-child(3){border-left:0;padding-left:0}
+  .count{padding-bottom:20px}
+}
+@media (max-width:620px){
+  .ledger caption{display:block;width:100%}
+  .ledger thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .ledger,.ledger tbody,.ledger tr,.ledger th,.ledger td{display:block;width:100%}
+  .ledger tr.person{padding:14px 0 4px;border-bottom:0}
+  .ledger tbody th,.ledger tbody td{padding:3px 0;border-bottom:0}
+  .ledger tbody td.dir::before{
+    content:attr(data-label);
+    display:inline-block;min-width:9ch;
+    font:11px/1.5 'Courier New',monospace;color:var(--paper-faint);letter-spacing:.06em;
+  }
+  .ledger .dir .qual{display:inline;margin-left:1.5ch}
+  .ledger tr.detail td{padding:8px 0 16px;border-bottom:1px solid var(--rule-soft)}
+  .findings li{grid-template-columns:1fr;gap:3px}
+  .counts{grid-template-columns:1fr 1fr}
+}
+
+/* --- figures (the topology drawing) -------------------------------------- */
+
+.figure{
+  margin:clamp(30px,5vw,48px) 0 0;
+  padding:clamp(20px,3vw,30px) 0;
+  border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+}
+.figure svg{display:block;width:100%;height:auto}
+.figure figcaption{
+  margin-top:16px;max-width:var(--measure);
+  font:13px/1.7 Georgia,serif;color:var(--paper-faint);
+}
+/* Panels used as a findings triptych carry a heading, not a link. */
+.triptych .panel h2{margin:14px 0 10px;font-size:19px}
+
+/* ---------------------------------------------------------------------------
+   Shared parts for the app sections — expenses, dashboard, landing zone.
+   Same rules as everything above: hairlines, no boxes, no rounding, monospace
+   only where it carries meaning.
+--------------------------------------------------------------------------- */
+
+code{
+  font:.88em 'Courier New',monospace;color:var(--paper);
+  background:rgba(255,254,240,.07);padding:.08em .35em;
+}
+.section ul,.section ol,ul.prose{
+  max-width:var(--measure);margin:0 0 15px;padding-left:1.2em;color:var(--paper-dim);
+}
+.section li,ul.prose li{margin:5px 0}
+.section strong{color:var(--paper);font-weight:700}
+.byline{margin:14px 0 0;font:13px/1.8 'Courier New',monospace;color:var(--paper-faint)}
+.byline a{color:var(--paper-dim)}
+.muted,.note{color:var(--paper-faint);font-size:14px;line-height:1.7}
+.section p.muted,.section p.note{color:var(--paper-faint)}
+.ok{color:var(--live)}
+.bad{color:var(--crit)}
+.back{margin:0 0 14px;font:13px/1.6 'Courier New',monospace}
+.back a{color:var(--paper-dim);text-decoration:none}
+.back a:hover{color:var(--live);text-decoration:underline}
+
+/* buttons: a hairline and a word. Quiet is the same with the line removed. */
+.btn,form.try button{
+  display:inline-block;font:13px/1 'Courier New',monospace;letter-spacing:.04em;
+  color:var(--paper);background:transparent;border:1px solid var(--paper-faint);
+  padding:11px 18px;cursor:pointer;text-decoration:none;border-radius:0;
+}
+.btn:hover,form.try button:hover{color:var(--navy);background:var(--paper);border-color:var(--paper)}
+.btn:visited{color:var(--paper)}
+.btn:visited:hover{color:var(--navy)}
+.btn:focus-visible,form.try button:focus-visible{outline:2px solid var(--live);outline-offset:3px}
+.btn[disabled]{opacity:.4;cursor:default;pointer-events:none}
+.btn.quiet{border-color:transparent;color:var(--paper-dim);text-decoration:underline;text-underline-offset:4px}
+.btn.quiet:hover{background:transparent;color:var(--live);border-color:transparent}
+
+/* a status line across the top of the Expenses app */
+.bar{
+  display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;justify-content:space-between;
+  margin:0;padding:12px 0;border-bottom:1px solid var(--rule);
+  font:12px/1.6 'Courier New',monospace;letter-spacing:.03em;color:var(--paper-dim);
+}
+.bar form{margin:0}
+.bar .btn{padding:7px 12px;font-size:12px}
+.bar.live{color:var(--live)}
+.bar.ended{color:var(--crit)}
+.bar.neutral{color:var(--paper-faint)}
+.brandline{
+  margin:0;padding:22px 0 0;
+  font:13px/1 'Courier New',monospace;letter-spacing:.14em;color:var(--paper-faint);
+}
+.brandline b{color:var(--paper);font-weight:700}
+.page-actions{margin-top:30px}
+
+/* key / value lists */
+.kv{margin:22px 0 0;display:grid;grid-template-columns:minmax(110px,160px) 1fr;
+  border-top:1px solid var(--rule)}
+.kv dt,.kv dd{margin:0;padding:11px 0;border-bottom:1px solid var(--rule-soft)}
+.kv dt{font:12px/1.8 'Courier New',monospace;letter-spacing:.06em;color:var(--paper-faint);padding-right:18px}
+.kv dd{color:var(--paper)}
+
+/* plain tables (claims, policies, tag coverage) */
+.table{width:100%;border-collapse:collapse;margin:10px 0 14px}
+.table th,.table td{
+  text-align:left;vertical-align:baseline;padding:11px 14px 11px 0;
+  border-bottom:1px solid var(--rule-soft);font-weight:400;color:var(--paper-dim);
+}
+.table thead th{
+  padding-bottom:9px;border-bottom:1px solid var(--rule);
+  font:11px/1.4 'Courier New',monospace;letter-spacing:.09em;color:var(--paper-faint);
+}
+.table .n{text-align:right;white-space:nowrap;padding-right:0;font-variant-numeric:tabular-nums}
+.table td.n.bad{color:var(--crit)}
+.table td:first-child{color:var(--paper)}
+
+/* the management-group tree, drawn the same way as the home page listing */
+.tree{
+  margin:8px 0 14px;padding:14px 0;overflow-x:auto;
+  border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  font:13px/1.9 'Courier New',monospace;color:var(--paper);
+}
+.tree .sub{color:var(--paper-faint)}
+
+/* "try it" form: one fieldset per row, rules between */
+form.try{margin:18px 0;border-top:1px solid var(--rule);max-width:var(--measure)}
+form.try fieldset{border:0;margin:0;padding:14px 0;border-bottom:1px solid var(--rule-soft)}
+form.try legend{float:left;width:minmax(110px,160px);width:170px;padding:0 18px 0 0;
+  font:12px/1.9 'Courier New',monospace;letter-spacing:.06em;color:var(--paper-faint)}
+form.try fieldset>*{margin-left:0}
+form.try label{margin-right:18px;white-space:nowrap;color:var(--paper-dim)}
+form.try select{
+  font:13px 'Courier New',monospace;color:var(--paper);background:var(--navy-deep);
+  border:1px solid var(--paper-faint);padding:6px 8px;border-radius:0;
+}
+form.try input[type=checkbox]{accent-color:var(--live)}
+form.try button{margin-top:16px}
+@media (max-width:620px){
+  form.try legend{float:none;width:auto;display:block;padding:0 0 6px}
+}
+
+/* the answer to a policy question: a rule down the left, nothing more */
+.answer{border-left:2px solid var(--rule);padding:4px 0 4px 16px;margin:18px 0;max-width:var(--measure)}
+.answer.denied{border-color:var(--crit)}
+.answer.allowed{border-color:var(--live)}
+.answer p{margin:0 0 8px}
+.answer ul{margin:0 0 4px;padding-left:1.2em}
+
+/* quote-free lede variant used on app pages */
+.lede{color:var(--paper);font-size:17px;max-width:62ch}
+.hero p.back{margin:0 0 18px;max-width:none;font:13px/1.6 'Courier New',monospace;color:var(--paper-dim)}
+.hero p.byline{margin:16px 0 0;max-width:none;font:13px/1.8 'Courier New',monospace;color:var(--paper-faint)}
+.hero p.page-actions{margin-top:30px}
+.hero p.note{margin-top:14px;font-size:14px;color:var(--paper-faint)}
+.rules + .byline,.kv + .note,.table + .note{margin-top:18px}
+.table th.n,.table td.n{padding-left:14px}
+
+/* reconciliation: run log and finding history */
+.runlog{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--rule)}
+.runlog li{margin:0;padding:9px 0;border-bottom:1px solid var(--rule-soft);font:13px/1.6 'Courier New',monospace;color:var(--paper-dim)}
+.runlog li .state{margin-left:1ch}
+.table-scroll{overflow-x:auto;margin:10px 0 14px}
+.table-scroll .table{margin:0;min-width:640px}
+.table.history td{font-size:14px}
+.table.history time{white-space:nowrap}
+.table.history th.n,.table.history td.n{padding-right:18px}
+.table.history td:last-child{white-space:nowrap}
+.runlog{padding-left:0}

@@ -1,0 +1,23 @@
+{
+  "displayName": "Glasscliff: storage accounts must use HTTPS and TLS 1.2",
+  "description": "No plain-HTTP access to storage, and no TLS versions older than 1.2.",
+  "mode": "Indexed",
+  "metadata": { "category": "Glasscliff guardrails", "version": "1.0.0" },
+  "parameters": {
+    "effect": { "type": "String", "allowedValues": ["Audit", "Deny", "Disabled"], "defaultValue": "Audit", "metadata": { "displayName": "Effect" } }
+  },
+  "policyRule": {
+    "if": {
+      "allOf": [
+        { "field": "type", "equals": "Microsoft.Storage/storageAccounts" },
+        {
+          "anyOf": [
+            { "field": "Microsoft.Storage/storageAccounts/supportsHttpsTrafficOnly", "notEquals": true },
+            { "field": "Microsoft.Storage/storageAccounts/minimumTlsVersion", "notEquals": "TLS1_2" }
+          ]
+        }
+      ]
+    },
+    "then": { "effect": "[parameters('effect')]" }
+  }
+}

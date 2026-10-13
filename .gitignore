@@ -1,0 +1,15 @@
+# dependencies and build output
+node_modules/
+*.zip
+
+# real parameter files hold subscription, principal and Okta ids; commit the .example.json copies instead
+main.parameters.json
+glasscliff-landing-zone/platform.parameters.json
+
+# local settings and secrets
+functions/local.settings.json
+.env
+*.local.json
+__azurite_db_*
+__blobstorage__/
+__queuestorage__/

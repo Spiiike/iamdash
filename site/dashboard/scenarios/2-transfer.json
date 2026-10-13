@@ -1,0 +1,24 @@
+{
+  "id": "transfer",
+  "order": 2,
+  "title": "Someone changes role",
+  "description": "The new title and department are set in Okta, which pushes the updated profile to Expenses over SCIM. Timings are illustrative.",
+  "provenance": {"kind": "illustrative"},
+  "operation": {
+    "operationId": "8210083440000-b2d4f6",
+    "type": "transfer",
+    "target": "riley.example@glasscliff.test",
+    "status": "succeeded",
+    "summary": "Transferred riley.example@glasscliff.test",
+    "created": "2026-09-20T15:02:40.000Z",
+    "updated": "2026-09-20T15:02:45.120Z",
+    "steps": [
+      { "seq": 1, "step": "okta.lookup", "outcome": "succeeded", "detail": "id 00u17aexample00demo1, status ACTIVE", "durationMs": 510, "started": "2026-09-20T15:02:40.012Z" },
+      { "seq": 2, "step": "okta.updateProfile", "outcome": "succeeded", "detail": "set title, department", "durationMs": 690, "started": "2026-09-20T15:02:40.530Z" },
+      { "seq": 3, "step": "verify.expensesAccountUpdated", "outcome": "succeeded", "detail": "SCIM update received", "durationMs": 3890, "started": "2026-09-20T15:02:41.225Z" }
+    ],
+    "scim": [
+      { "step": "scim.replaceUser", "httpStatus": 200, "outcome": "succeeded", "at": "2026-09-20T15:02:44.020Z", "evidenceBlob": "x", "sessionsEnded": 0 }
+    ]
+  }
+}
