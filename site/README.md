@@ -7,7 +7,7 @@ Express app on App Service (`wetcliff`). Start command: `node server.js`.
 | `/` | Home page: the lab directory |
 | `/labs/identity` | Identity lab index |
 | `/labs/identity/about` | Identity lab write-up |
-| `/labs/identity/dashboard/` | Operations dashboard: live runs, labelled replays, the visitor demo, and its independent readback |
+| `/labs/identity/dashboard/` | Operations dashboard: live runs, labelled replays, the visitor demo (with a real sign-in), and its independent readback |
 | `/labs/identity/expenses/` | Glasscliff Expenses: Okta sign-in, SCIM-account check, a Sessions row per login |
 | `/labs/identity/federation` | Federation write-up |
 | `/labs/identity/recon` | Reconciliation: latest comparison, finding history, every run |
@@ -25,6 +25,8 @@ These come from the app settings `main.bicep` merges into the web app:
 - `LZ_MANAGEMENT_GROUP` (default `glasscliff`) and, only when the guardrails are assigned to a single resource group, `LZ_POLICY_RESOURCE_GROUP` for the landing zone page.
 
 The dashboard calls the lifecycle API server-side. The operator key never reaches the browser, and every response goes through `dashboard/mask.js`, which is an allowlist. Without the operator key, live runs and the demo are off, and replays still work.
+
+The one exception to "no login reaches the browser" is `/api/demo/start`: the visitor who starts a demo run gets that throwaway person's login and password, once, so they can sign in to Expenses as them. Nothing else carries it. See [`../docs/visitor-sign-in.md`](../docs/visitor-sign-in.md).
 
 Expenses requests that arrive on a host other than the one in `EXPENSES_OIDC_POST_LOGOUT_REDIRECT_URI` are redirected to that host, because Okta returns the browser there and the sign-in cookie must match. Set `publicHostName` in `main.parameters.json` so that host is the custom domain.
 

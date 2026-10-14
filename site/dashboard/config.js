@@ -14,7 +14,7 @@ function loadDashboardConfig(env = process.env, overrides = {}) {
     upstreamTimeoutMs: 8000,
     demoTimeoutMs: 60000, // a hire waits for Okta's SCIM push
     demoEnabled: (env.DEMO_ENABLED || 'true').toLowerCase() === 'true',
-    demoPerIpCooldownMs: 10 * 60 * 1000,
+    demoPerIpCooldownMs: 5 * 60 * 1000, // shorter than DEMO_TTL_MINUTES, so "Start another" works after an offboard
     demoGlobalPerHour: 20,
     ...overrides,
   };

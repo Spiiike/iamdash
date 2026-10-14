@@ -138,13 +138,16 @@ param demoEnabled bool = true
 param demoEmailDomain string = 'demo.glasscliff.online'
 
 @description('Minutes before a demo user is offboarded and deleted.')
-param demoTtlMinutes int = 30
+param demoTtlMinutes int = 8
 
 @description('How many demo users may exist at once.')
-param demoMaxLive int = 5
+param demoMaxLive int = 3
 
 @description('How many demo runs may start in one day.')
-param demoDailyMax int = 50
+param demoDailyMax int = 30
+
+@description('Okta group (00g...) demo people are created in. Assign Expenses to it and give it a password-only sign-on rule; see docs/visitor-sign-in.md.')
+param demoOktaGroupId string = ''
 
 @description('Okta application instance id for the fictional "Glasscliff Expenses" app (0oa...).')
 param oktaExpensesAppId string = ''
@@ -787,6 +790,10 @@ var functionAppSettings = [
   {
     name: 'DEMO_DAILY_MAX'
     value: string(demoDailyMax)
+  }
+  {
+    name: 'DEMO_OKTA_GROUP_ID'
+    value: demoOktaGroupId
   }
   {
     name: 'OKTA_EXPENSES_APP_ID'

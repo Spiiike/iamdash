@@ -7,7 +7,7 @@ const { createLandingZoneRouter } = require('../landingzone');
 const { normalize, requestBody, interpret, COMBINATIONS } = require('../landingzone/check');
 
 const SUB = '7e1d2c3b-4a5f-4e6d-8c7b-9a0f1e2d3c4b';
-const TENANT = '0ad6bf39-5055-438a-8d53-ce64746ea521';
+const TENANT = '00000000-0000-4000-8000-000000000000';
 const MY = `/providers/Microsoft.Management/managementGroups/glasscliff/providers/Microsoft.Authorization/policyAssignments/glasscliff-baseline`;
 const ASC = `/subscriptions/${SUB}/providers/Microsoft.Authorization/policyAssignments/SecurityCenterBuiltIn`;
 

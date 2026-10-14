@@ -45,6 +45,7 @@ Object.assign(process.env, {
   LAB_VERIFY_TIMEOUT_SECONDS: '2',
   LAB_VERIFY_INTERVAL_SECONDS: '0.05',
   RECON_EXCEPTIONS: '[]',
+  GOOGLE_CUSTOMER: 'C0test123',
 });
 
 const store = require('../src/lib/storage');

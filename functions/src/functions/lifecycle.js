@@ -209,7 +209,9 @@ const hire = {
       },
     };
   },
-  async execute(op, { target, profile, downstream }) {
+  // credentials and groupIds come only from the public demo (demo.js). The
+  // operator route never accepts them from a request body.
+  async execute(op, { target, profile, downstream, credentials, groupIds }) {
     const appId = expensesAppId();
     const dirs = downstreamDirs(downstream);
     await ops.step(op, 'okta.lookup', async () => {
@@ -217,8 +219,9 @@ const hire = {
       return { detail: 'not found, ok to create' };
     });
     const user = await ops.step(op, 'okta.createUser', async () => {
-      const u = await okta.createUser(profile);
-      return { ...u, detail: `id ${u.id}, status ${u.status}` };
+      const u = await okta.createUser(profile, credentials, groupIds);
+      const groups = Array.isArray(groupIds) && groupIds.length ? `, added to ${groupIds.length === 1 ? 'its group' : `${groupIds.length} groups`}` : '';
+      return { ...u, detail: `id ${u.id}, status ${u.status}${groups}` };
     });
     await ops.update(op, { oktaUserId: user.id });
     await ops.step(op, 'okta.assignExpenses', async () => {

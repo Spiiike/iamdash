@@ -87,8 +87,12 @@ module.exports = {
   // credentials are only supplied by the demo path: giving Okta a password
   // makes the user ACTIVE without sending an activation email, which matters
   // because demo addresses have no mailbox.
-  async createUser(profile, credentials) {
-    const body = credentials ? { profile, credentials } : { profile };
+  // groupIds puts the user in those groups as part of the same call, so a
+  // group-scoped sign-on rule applies from the first moment the account exists.
+  async createUser(profile, credentials, groupIds) {
+    const body = { profile };
+    if (credentials) body.credentials = credentials;
+    if (Array.isArray(groupIds) && groupIds.length) body.groupIds = groupIds;
     return (await request('POST', '/api/v1/users?activate=true', body)).body;
   },
   async updateProfile(userId, profile) {

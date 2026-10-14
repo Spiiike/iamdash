@@ -4,7 +4,7 @@ The code behind **[projects.glasscliff.online](https://projects.glasscliff.onlin
 
 | Lab | Live page | What it shows |
 | --- | --- | --- |
-| Identity lifecycle | [/labs/identity/dashboard](https://projects.glasscliff.online/labs/identity/dashboard/) | Joiner, mover and leaver runs from Okta into a downstream app over SCIM. You can run one yourself and check the result independently. |
+| Identity lifecycle | [/labs/identity/dashboard](https://projects.glasscliff.online/labs/identity/dashboard/) | Joiner, mover and leaver runs from Okta into a downstream app over SCIM. You can make a throwaway person, sign in as them, and watch offboarding end your session. |
 | Directory federation | [/labs/identity/federation](https://projects.glasscliff.online/labs/identity/federation) | The same Okta account provisioned and federated into Entra ID and Google Cloud Identity |
 | Reconciliation | [/labs/identity/recon](https://projects.glasscliff.online/labs/identity/recon) | A twice-daily, read-only check that all three directories still agree, with run history |
 | Azure landing zone | [/labs/landing-zone](https://projects.glasscliff.online/labs/landing-zone/) | Management groups, guardrail policies, central logging and a budget, read live from Azure |
@@ -31,6 +31,7 @@ flowchart LR
 - **Okta is the source of truth.** The lifecycle API changes people in Okta. Okta pushes the change to the Glasscliff Expenses app over SCIM, and to Entra ID and Google through its own provisioning.
 - **Every lifecycle step is checked against the target.** Requests to Okta are one kind of evidence, and a read of the target system afterwards is another. The dashboard labels each step with the kind it is.
 - **The visitor demo has an independent check.** For a run you start yourself, the site reads the Expenses tables directly with its own managed identity, without going through the lifecycle API, and shows before, expected and observed values.
+- **Visitors sign in for real.** The demo hands the visitor a one-time password for the throwaway person, so the session that offboarding ends is one they are using. Setup and safeguards are in [`docs/visitor-sign-in.md`](docs/visitor-sign-in.md).
 - **Nothing identifying is published.** People are pseudonyms (HMAC of the login with a server-side key), every public response passes through an allowlist masker, and the operator key never reaches a browser.
 
 ## Repository layout
@@ -53,6 +54,7 @@ functions/                  Azure Functions (Node 20)
   test/                     node --test suites (+ Azurite-backed storage tests)
 glasscliff-landing-zone/    landing zone Bicep, policy definitions, helper scripts
 main.bicep                  lab infrastructure (Functions, storage, Key Vault, app settings)
+docs/visitor-sign-in.md     the visitor sign-in demo: Okta setup, settings, test plan
 modules/                    Bicep modules for main.bicep
 .github/workflows/deploy.yml  test everything; deploy the half that changed
 ```
@@ -75,5 +77,5 @@ cd functions && npm ci && npm test     # reconciler, history, downstream checks
 
 - **Okta, Entra ID, Google Cloud Identity and Azure** are real tenants: Okta Integrator Free, Entra ID Free, Cloud Identity Free and an Azure for Students subscription.
 - **Glasscliff Expenses** is a small app built for the lab, so provisioning has a real target.
-- **Demo sessions.** Nobody signs in as a demo person, so the demo writes one session row marked `simulated` at hire. Okta's SCIM deactivation deleting that row on offboarding is real.
+- **Demo people** are invented, with logins on a domain that has no mailbox. Visitors sign in as them with a password shown once, and they are deleted from Okta within minutes.
 - **Replays** are labelled on the dashboard as *Recorded run* (captured by `tools/record-scenario.js`) or *Illustrative* (hand-written timings).
