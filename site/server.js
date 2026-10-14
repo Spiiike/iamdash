@@ -112,7 +112,7 @@ ${node({ href: `${LANDING_ZONE_MOUNT}/`, stem: '`-- ', name: 'labs/landing-zone/
 <article class="panel">
 <span class="path">/labs/identity/federation</span>
 <h2><a href="/labs/identity/federation">Directory federation</a></h2>
-<p>The same Okta account pushed into Entra ID and Google Cloud Identity, with sign-in federated both ways. The two vendors disagree about more than you'd expect.</p>
+<p>The same Okta account pushed into Entra ID and Google Cloud Identity, with both directories sending sign-in to Okta. The two vendors disagree about more than you'd expect.</p>
 </article>
 <article class="panel">
 <span class="path">/labs/landing-zone</span>
@@ -128,7 +128,7 @@ ${node({ href: `${LANDING_ZONE_MOUNT}/`, stem: '`-- ', name: 'labs/landing-zone/
 <dt>live</dt><dd>Running right now against real cloud tenants. You can interact with it.</dd>
 <dt>verified</dt><dd>Built and tested end to end, with the results and the failures written up.</dd>
 <dt>soon</dt><dd>Built, but not deployed yet.</dd>
-<dt>pseudonyms</dt><dd>Anywhere a person appears, they appear as a stable fake name. Addresses, directory object ids and attribute values never leave the tenant.</dd>
+<dt>pseudonyms</dt><dd>Anywhere a person appears, they appear as a stable fake name. Addresses and directory object ids never leave the tenant. The only names and titles you'll see are the ones a visitor picked for their own demo person.</dd>
 <dt>free tiers</dt><dd>Okta Integrator Free, Entra ID Free, Google Cloud Identity Free and an Azure student subscription. The constraints are part of the exercise.</dd>
 </dl></div>
 <p class="byline">Why I built them: <a href="${LANDING_ZONE_MOUNT}/about">the landing zone</a> · <a href="/labs/identity/about">the identity lab</a></p>
@@ -139,7 +139,7 @@ app.get(['/labs/identity', '/labs/identity/'], (req, res) =>
 <section class="hero">
 <h1>Identity Lifecycle Lab</h1>
 <p>Okta is the source of truth for identities. A lifecycle API creates, changes and deactivates people in Okta; Okta provisions the Glasscliff Expenses app over SCIM; every step is checked against what actually landed.</p>
-<p class="byline"><a href="/labs/identity/about">About this project</a></p>
+<p class="byline"><a href="/labs/identity/about">About this project</a> · <a href="https://github.com/Spiiike/iamdash">Source</a> · <a href="https://github.com/Spiiike/iamdash/tree/main/functions/test">Functions tests</a> · <a href="https://github.com/Spiiike/iamdash/tree/main/site/test">Site tests</a></p>
 </section>
 
 <nav class="index" aria-label="Identity lab">
@@ -151,7 +151,7 @@ ${node({ href: RECON_MOUNT, stem: '`-- ', name: 'recon', note: 'do all three dir
 </nav>
 
 <section class="section">
-<p>Signing in to Expenses needs an account in the lab's Okta org, so visitors should start with the dashboard. People there are shown as pseudonyms.</p>
+<p>To sign in to Expenses, start on the dashboard: it creates a throwaway person for you and shows their username and password once. Everyone else on the dashboard is shown as a pseudonym.</p>
 </section>`, { current: 'labs' })));
 
 app.get(['/labs/identity/federation', '/labs/identity/federation/'], (req, res) =>

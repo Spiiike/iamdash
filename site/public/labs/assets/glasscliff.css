@@ -354,6 +354,13 @@ a.node:focus-visible{outline:2px solid var(--live);outline-offset:-2px}
   border-bottom:1px solid var(--rule);
 }
 .figure svg{display:block;width:100%;height:auto}
+/* On a phone the federation diagram's small labels shrank to about 5px, so
+   below 640px I keep it at a readable width and let it scroll sideways. */
+@media (max-width:640px){
+  .diagram-scroll{overflow-x:auto}
+  .diagram-scroll svg{min-width:640px}
+}
+.diagram-scroll:focus-visible{outline:2px solid var(--live);outline-offset:3px}
 .figure figcaption{
   margin-top:16px;max-width:var(--measure);
   font:13px/1.7 Georgia,serif;color:var(--paper-faint);

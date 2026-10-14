@@ -19,6 +19,7 @@ const federationPage = ({ reconLive = false } = {}) => `
     </section>
 
     <figure class="figure">
+      <div class="diagram-scroll" tabindex="0" role="region" aria-label="Federation diagram">
       <svg viewBox="0 0 700 420" role="img"
            aria-label="Okta sits at the top as the source of truth. Two arms run downward: one to Entra ID, provisioning over Microsoft Graph and signing in over WS-Federation; one to Google Cloud Identity, provisioning over the Admin SDK and signing in over SAML 2.0. A reconciler reads all three directories and publishes this site's reconciliation page.">
         <defs>
@@ -75,6 +76,7 @@ const federationPage = ({ reconLive = false } = {}) => `
         <text x="686" y="220" font-size="10" fill="var(--paper-faint)" font-family="'Courier New',monospace"
               transform="rotate(-90 686 220)" text-anchor="middle">reads all three</text>
       </svg>
+      </div>
       <figcaption>
         Two arms, four mechanisms, one checker. Solid lines are provisioning and sign-in;
         dashed lines are the reconciler's read-only pass.
@@ -118,7 +120,8 @@ const federationPage = ({ reconLive = false } = {}) => `
           </dd>
           <dt>in Terraform</dt>
           <dd>
-            Policies and groups, with plan-on-PR and a daily drift job. The vendor
+            Policies and groups, in <a href="https://github.com/Spiiike/okta-as-code">okta-as-code</a>,
+            with plan-on-PR and a daily drift job. The vendor
             connectors deliberately are not: they carry authenticated tokens and
             provisioning state no provider models.
           </dd>
@@ -175,8 +178,8 @@ const federationPage = ({ reconLive = false } = {}) => `
       </p>
       <p>
         So the last piece reads all three directories on a schedule and checks every
-        account. It knows the subtle cases: that Okta's status tracks the password
-        credential rather than whether someone can sign in, that an Entra account missing
+        account. It knows the subtle cases: that some Okta statuses, like PASSWORD_EXPIRED,
+        describe the password rather than whether someone can sign in, that an Entra account missing
         its anchor looks healthy and cannot be signed into, that break-glass accounts are
         meant to have no Okta identity. If any one of the three reads fails it publishes
         nothing at all, because a partial read would make every account look like it had
