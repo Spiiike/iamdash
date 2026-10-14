@@ -65,7 +65,7 @@ function createDashboardRouter(options = {}) {
       'Cache-Control': 'no-store',
     });
     const homeHref = options.homeHref || req.baseUrl.replace(/\/[^/]*$/, '') || '/';
-    const expensesHref = options.expensesHref || `${req.baseUrl}/expenses/`;
+    const expensesHref = options.expensesHref || `${req.baseUrl.replace(/\/[^/]*$/, '')}/expenses/`;
     res.type('html').send(renderPage({ nonce, basePath: req.baseUrl, liveEnabled: cfg.liveEnabled, homeHref, expensesHref }));
   });
 
