@@ -31,7 +31,7 @@ flowchart LR
 - **Okta is the source of truth.** The lifecycle API changes people in Okta. Okta pushes the change to the Glasscliff Expenses app over SCIM, and to Entra ID and Google through its own provisioning.
 - **Every lifecycle step is checked against the target.** Requests to Okta are one kind of evidence, and a read of the target system afterwards is another. The dashboard labels each step with the kind it is.
 - **The visitor demo has an independent check.** For a run you start yourself, the site reads the Expenses tables directly with its own managed identity, without going through the lifecycle API, and shows before, expected and observed values.
-- **Visitors sign in for real.** The demo hands the visitor a one-time password for the throwaway person, so the session that offboarding ends is one they are using. Setup and safeguards are in [`docs/visitor-sign-in.md`](docs/visitor-sign-in.md).
+- **Visitors sign in for real.** The demo hands the visitor a one-time password for the throwaway person, so the session that offboarding ends is one they are using.
 - **Nothing identifying is published.** People are pseudonyms (HMAC of the login with a server-side key), every public response passes through an allowlist masker, and the operator key never reaches a browser.
 
 ## Repository layout
@@ -54,7 +54,6 @@ functions/                  Azure Functions (Node 20)
   test/                     node --test suites (+ Azurite-backed storage tests)
 glasscliff-landing-zone/    landing zone Bicep, policy definitions, helper scripts
 main.bicep                  lab infrastructure (Functions, storage, Key Vault, app settings)
-docs/visitor-sign-in.md     the visitor sign-in demo: Okta setup, settings, test plan
 modules/                    Bicep modules for main.bicep
 .github/workflows/deploy.yml  test everything; deploy the half that changed
 ```
