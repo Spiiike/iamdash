@@ -108,7 +108,7 @@ function browser() {
 
 // ---------- tests ----------------------------------------------------------
 (async () => {
-  const CLIENT_ID = '0oa17safg6d3lix1o698';
+  const CLIENT_ID = '0oa1exampleclient0de';
   const SECRET = 'test-secret-' + crypto.randomBytes(8).toString('hex');
   const okta = await startOkta(CLIENT_ID, SECRET);
   const store = memoryStore('glasscliff-expenses');

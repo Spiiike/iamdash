@@ -15,6 +15,11 @@
  *                                 in the current recent list are served
  *   GET /api/scenarios            replay list, each with its provenance
  *   GET /api/scenarios/:id        one replay, masked
+ *   GET  /api/demo/limits         whether a visitor may start one, and the titles
+ *   POST /api/demo/start          { name?, title? } -> a throwaway person, plus the
+ *                                 login and one-time password to sign in as them
+ *   POST /api/demo/move           role change for that person (runKey)
+ *   POST /api/demo/offboard       offboard that person now (runKey)
  *   GET /api/demo/state?run=...   independent readback of a demo person, read
  *                                 straight from the Expenses tables (readback.js)
  */
@@ -60,7 +65,8 @@ function createDashboardRouter(options = {}) {
       'Cache-Control': 'no-store',
     });
     const homeHref = options.homeHref || req.baseUrl.replace(/\/[^/]*$/, '') || '/';
-    res.type('html').send(renderPage({ nonce, basePath: req.baseUrl, liveEnabled: cfg.liveEnabled, homeHref }));
+    const expensesHref = options.expensesHref || `${req.baseUrl}/expenses/`;
+    res.type('html').send(renderPage({ nonce, basePath: req.baseUrl, liveEnabled: cfg.liveEnabled, homeHref, expensesHref }));
   });
 
   router.get('/api/operations', wrap(async (req, res) => {
@@ -82,10 +88,29 @@ function createDashboardRouter(options = {}) {
   }));
 
   // ------------------------------------------------------------ demo ----
-  // Visitors can start a throwaway hire, move them, and offboard them. The
-  // demo identity is invented by the lifecycle API, never by the browser: the
-  // browser only ever holds an opaque runKey, signed here, so it cannot aim a
-  // transfer or an offboarding at a real person.
+  // Visitors can start a throwaway hire, sign in to Expenses as them, move
+  // them, and offboard them. The demo login is invented by the lifecycle API,
+  // never by the browser: the visitor picks a display name and a title from a
+  // list, and the browser only ever holds an opaque runKey, signed here, so it
+  // cannot aim a transfer or an offboarding at a real person.
+  //
+  // The one exception to "no login reaches the browser": the visitor who
+  // started a run is shown that run's own login and password, once, in the
+  // /api/demo/start response, so they can sign in as the person they made. It
+  // is an invented demo identity that is deleted within minutes. Nothing else
+  // (operations, replays, readback) ever carries it.
+  const DEMO_LOGIN = /^demo-[0-9a-z]{4,16}@[a-z0-9.-]+$/;
+  const DEMO_PASSWORD = /^[\x21-\x7e]{12,64}$/; // printable, no spaces
+  const NAME = /^[\p{L}][\p{L}\p{M}' -]{0,39}$/u;
+  const TITLE = /^[A-Za-z][A-Za-z &/-]{0,39}$/;
+  const label = (v) => (typeof v === 'string' && TITLE.test(v) ? v : null);
+  function demoInput(body = {}) {
+    const name = String(body.name || '').normalize('NFC').replace(/\s+/g, ' ').trim();
+    const title = String(body.title || '').trim();
+    if (name && !NAME.test(name)) return { error: 'Use letters, spaces, hyphens or apostrophes for the name, up to 40 characters.' };
+    if (title && !TITLE.test(title)) return { error: 'Pick one of the job titles on the list.' };
+    return { value: { ...(name && { name }), ...(title && { title }) } };
+  }
   // Opaque handle for a demo run: signed here, meaningless to the browser.
   const demoKey = crypto.hkdfSync('sha256', Buffer.from(String(cfg.operatorKey || 'demo')), Buffer.alloc(0), 'glasscliff-demo-runkey-v1', 32);
   const signRun = (obj) => {
@@ -145,7 +170,8 @@ function createDashboardRouter(options = {}) {
         why = 'The demo is busy right now. Try again in a few minutes.';
       }
     }
-    json(res, 200, { available: upstreamLimits.available === true && !mine, reason: mine || why, ttlMinutes });
+    const titles = Array.isArray(upstreamLimits.titles) ? upstreamLimits.titles.map(label).filter(Boolean).slice(0, 20) : [];
+    json(res, 200, { available: upstreamLimits.available === true && !mine, reason: mine || why, ttlMinutes, titles, signIn: upstreamLimits.signIn === true });
   }));
 
   router.post('/api/demo/start', express.json({ limit: '1kb' }), wrap(async (req, res) => {
@@ -153,13 +179,28 @@ function createDashboardRouter(options = {}) {
     const ip = clientIp(req);
     const blocked = mayStart(ip);
     if (blocked) return json(res, 429, { error: blocked });
-    const { status, body } = await upstream.post('/demo/hire', {});
-    if (status !== 200) return json(res, status === 429 ? 429 : 502, { error: body.error || "The demo could not start. Try again in a minute." });
+    const input = demoInput(req.body || {});
+    if (input.error) return json(res, 400, { error: input.error });
+    const { status, body } = await upstream.post('/demo/hire', input.value);
+    if (status !== 200) return json(res, [400, 429].includes(status) ? status : 502, { error: body.error || "The demo could not start. Try again in a minute." });
+    const login = String(body.demo?.login || '').toLowerCase();
+    if (!DEMO_LOGIN.test(login)) {
+      log.error('[dashboard] demo hire returned something that is not a demo login; refusing to use it');
+      return json(res, 502, { error: 'The demo could not start. Try again in a minute.' });
+    }
     seen.set(ip, Date.now());
     starts.push(Date.now());
-    const runKey = signRun({ login: body.demo.login, exp: Date.parse(body.demo.expiresAt) });
-    log.info(`[dashboard] demo started for ${ip}: ${body.operationId}`);
-    json(res, 200, { operation: masker.operation(body, { withSteps: true }), runKey, expiresAt: body.demo.expiresAt });
+    const runKey = signRun({ login, exp: Date.parse(body.demo.expiresAt) });
+    log.info(`[dashboard] demo started for ${ip}: ${body.operationId}`); // never the login or password
+    const password = typeof body.demo.password === 'string' && DEMO_PASSWORD.test(body.demo.password) ? body.demo.password : null;
+    json(res, 200, {
+      operation: masker.operation(body, { withSteps: true }),
+      runKey,
+      expiresAt: body.demo.expiresAt,
+      // Only for the visitor who started this run; see the note above.
+      signIn: password ? { login, password } : null,
+      role: { title: label(body.demo.title), department: label(body.demo.department) },
+    });
   }));
 
   for (const [action, route] of [['transfer', 'move'], ['terminate', 'offboard']]) {
@@ -170,7 +211,7 @@ function createDashboardRouter(options = {}) {
       if (Date.now() > run.exp) return json(res, 410, { error: 'That demo person has already been deleted. Start a new one.' });
       const { status, body } = await upstream.post(`/demo/${action}`, { login: run.login });
       if (status !== 200) return json(res, [404, 409, 410, 429].includes(status) ? status : 502, { error: body.error || 'That did not work. Try again in a minute.' });
-      json(res, 200, { operation: masker.operation(body, { withSteps: true }) });
+      json(res, 200, { operation: masker.operation(body, { withSteps: true }), role: { title: label(body.demo?.title), department: label(body.demo?.department) } });
     }));
   }
 
@@ -179,8 +220,6 @@ function createDashboardRouter(options = {}) {
   // while the run happens. Same runKey as the demo buttons: only a person this
   // page created can be read, never anyone real.
   const reads = new Map(); // ip -> [times]
-  // Demo logins are always demo-<hex>@<demo domain> (functions/src/functions/demo.js).
-  const DEMO_LOGIN = /^demo-[0-9a-z]{4,16}@[a-z0-9.-]+$/;
   router.get('/api/demo/state', wrap(async (req, res) => {
     // Without the operator key the runKey signing key falls back to a constant,
     // so a runKey could be forged. The demo is off in that state, and so is this.

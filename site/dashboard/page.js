@@ -11,6 +11,22 @@ const CSS = `
 .try p{margin:0 0 14px;color:var(--paper-dim);font-size:15px}
 .try .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .try .note{margin:12px 0 0;color:var(--paper-faint);font-size:14px}
+.try .row{align-items:flex-end}
+.try .field{display:flex;flex-direction:column;gap:5px;font:12px/1.3 'Courier New',monospace;letter-spacing:.04em;color:var(--paper-faint)}
+.try input,.try select{font:15px/1.3 Georgia,serif;color:var(--paper);background:rgba(255,254,240,.06);border:1px solid var(--rule);border-radius:2px;padding:7px 9px;width:15rem;max-width:100%}
+.try select option{color:#10203a;background:#fffef0}
+.try input:focus-visible,.try select:focus-visible{outline:2px solid var(--live);outline-offset:2px}
+.try input::placeholder{color:var(--paper-faint)}
+.signin{margin:18px 0 0;padding:14px 16px;border:1px solid var(--rule);max-width:var(--measure)}
+.signin h3{margin:0 0 6px;font:400 17px/1.3 Georgia,serif}
+.signin p{margin:0 0 10px;font-size:14px;color:var(--paper-dim)}
+.signin p:last-child{margin-bottom:0}
+.creds{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;margin:0 0 14px;font-size:14px;align-items:baseline}
+.creds dt{font:12px/1.4 'Courier New',monospace;letter-spacing:.06em;color:var(--paper-faint)}
+.creds dd{margin:0;overflow-wrap:anywhere}
+.creds code{font:15px 'Courier New',monospace;color:var(--paper)}
+.btn.copy{padding:0 4px;font-size:12px}
+.check .ended{color:var(--paper)}
 .tabs{display:flex;gap:22px;margin:clamp(30px,5vw,46px) 0 22px;border-bottom:1px solid var(--rule)}
 .tabs button{font:13px/1 'Courier New',monospace;letter-spacing:.04em;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:0 0 12px;background:transparent;color:var(--paper-faint);cursor:pointer;border-radius:0}
 .tabs button:hover:not([disabled]){color:var(--live)}
@@ -377,7 +393,7 @@ const CLIENT = String.raw`
         ...row('Okta API call', 'The lab asked Okta to do something and Okta accepted it. On its own, that proves nothing reached any app.'),
         ...row('Received by Expenses', 'The Expenses SCIM endpoint logged Okta\'s call when it arrived. This proves Okta pushed the change, and when.'),
         ...row('Readback', 'The target was read afterwards to confirm it holds the intended state: the account exists, the title changed, the account is inactive, no session is left.'),
-        ...row('Check it yourself', 'For runs you start yourself under "Run one yourself", this page also reads Expenses directly, without going through the lifecycle API. You can open that read in another tab.')));
+        ...row('Check it yourself', 'For runs you start yourself under "Run one yourself", this page also reads Expenses directly, without going through the lifecycle API. You can open that read in another tab, and you can sign in to Expenses as the person you made.')));
   }
 
   // ---------- playback: events appear at their real offsets -----------------
@@ -424,7 +440,10 @@ const CLIENT = String.raw`
   });
 
   // ---------- run one yourself --------------------------------------------
-  const demo = { runKey: null, expiresAt: null, live: false, busy: false };
+  // The visitor makes a throwaway person, signs in to Expenses as them in
+  // another tab, and then watches offboarding end that session.
+  const EXPENSES = document.body.dataset.expenses;
+  const demo = { runKey: null, expiresAt: null, live: false, busy: false, role: null, signIn: null, titles: [] };
 
   async function send(path, body) {
     const res = await fetch(BASE + path, {
@@ -449,71 +468,128 @@ const CLIENT = String.raw`
   }
 
   const acct = (st) => !st ? '—' : !st.account.exists ? 'absent' : st.account.active ? 'exists, active' : 'exists, inactive';
-  const sess = (st) => !st ? '—' : st.sessions.total + (st.sessions.simulated ? ' (' + st.sessions.simulated + ' simulated)' : '');
+  const sess = (st) => !st ? '—' : String(st.sessions.total) + (st.sessions.simulated ? ' (' + st.sessions.simulated + ' simulated)' : '');
   const val = (st, k) => !st || !st.account.exists ? '—' : (st.account[k] || '(empty)');
+  const holds = (st) => !!st && st.account.exists;
 
-  // [what, before, expected, observed, verdict: true | false | null]
+  // [what, before, expected, observed, verdict]
+  // verdict: true matches, false does not match, 'wait' not yet, null not applicable
   function expectations(kind, b, a) {
+    const role = demo.role || {};
+    const same = (st, k) => holds(st) && (role[k] ? st.account[k] === role[k] : !!st.account[k]);
     if (kind === 'hire') return [
-      ['Expenses account', 'did not exist', 'exists, active', acct(a), !!a && a.account.exists && a.account.active],
-      ['Title', '—', 'set from Okta', val(a, 'title'), !!a && a.account.exists && !!a.account.title],
-      ['Department', '—', 'set from Okta', val(a, 'department'), !!a && a.account.exists && !!a.account.department],
-      ['Session rows', '0', 'at least 1 (simulated)', sess(a), !!a && a.sessions.total >= 1],
+      ['Expenses account', 'did not exist', 'exists, active', acct(a), holds(a) && a.account.active],
+      ['Title', '—', role.title || 'set from Okta', val(a, 'title'), same(a, 'title')],
+      ['Department', '—', role.department || 'set from Okta', val(a, 'department'), same(a, 'department')],
+      ['Sessions', '0', '1 once you sign in', sess(a), !a ? false : a.sessions.total >= 1 ? true : 'wait'],
     ];
     if (kind === 'move') return [
-      ['Expenses account', acct(b), 'still active', acct(a), !!a && a.account.exists && a.account.active],
-      ['Title', val(b, 'title'), 'changed', val(a, 'title'), !!a && !!b && a.account.exists && a.account.title !== b.account.title],
-      ['Department', val(b, 'department'), 'changed', val(a, 'department'), !!a && !!b && a.account.exists && a.account.department !== b.account.department],
+      ['Expenses account', acct(b), 'still active', acct(a), holds(a) && a.account.active],
+      ['Title', val(b, 'title'), role.title || 'changed', val(a, 'title'), same(a, 'title') && (!holds(b) || a.account.title !== b.account.title)],
+      ['Department', val(b, 'department'), role.department || 'changed', val(a, 'department'), same(a, 'department') && (!holds(b) || a.account.department !== b.account.department)],
+      ['Sessions', sess(b), b && b.sessions.total ? 'unchanged: you stay signed in' : 'unchanged', sess(a), !!a && !!b && a.sessions.total === b.sessions.total],
     ];
+    const had = !!b && b.sessions.total > 0;
     return [
       ['Expenses account', acct(b), 'inactive or removed', acct(a), !!a && (!a.account.exists || !a.account.active)],
-      ['Session rows', sess(b), '0', sess(a), !!a && a.sessions.total === 0],
+      ['Sessions', sess(b), '0', sess(a), !a ? false : (!b || had) ? a.sessions.total === 0 : null],
     ];
   }
 
-  function renderCheck(kind, before, after, err) {
+  // Who ended the session: Okta's SCIM call (what this demo is meant to show),
+  // or the lifecycle API's safety net (which would mean the SCIM path failed).
+  function whoEnded(op, b) {
+    if (b && b.sessions.total === 0) return 'You were not signed in to Expenses, so there was no session to end. Start another and sign in first to watch it happen.';
+    const byScim = ((op && op.scim) || []).reduce((n, c) => n + (c.sessionsEnded || 0), 0);
+    const net = ((op && op.steps) || []).some((s) => s.step === 'verify.expensesSessionsEnded' && /removed/.test(s.detail || ''));
+    if (byScim > 0) return 'Okta\'s SCIM deactivation call ended ' + byScim + (byScim === 1 ? ' session' : ' sessions') + ' in Expenses. Refresh your Expenses tab: it now says the account was deactivated, and the password no longer signs in.';
+    if (net) return 'Okta\'s SCIM call did not end the session, so the lab\'s own safety net removed it. That is a failure of the thing this demo shows, and the run reports it.';
+    return 'Okta\'s SCIM call has not been logged yet. Read Expenses again in a few seconds.';
+  }
+
+  const VERDICT = (ok) => ok === true ? ['v-ok', 'matches'] : ok === false ? ['v-bad', 'does not match'] : ok === 'wait' ? ['v-na', 'sign in, then read again'] : ['v-na', 'n/a'];
+
+  function renderCheck(kind, before, after, err, op) {
     const box = $('#check');
     box.hidden = false;
-    if (err) { box.replaceChildren(el('h3', {}, 'Check it yourself'), el('p', {}, err)); return; }
-    const rows = expectations(kind, before, after).map(([what, b, x, o, ok]) =>
-      el('tr', {}, el('th', { scope: 'row' }, what), el('td', {}, b), el('td', {}, x), el('td', {}, o),
-        el('td', { class: ok === true ? 'v-ok' : ok === false ? 'v-bad' : 'v-na' }, ok === true ? 'matches' : ok === false ? 'does not match' : 'n/a')));
-    const allOk = expectations(kind, before, after).every((r) => r[4] !== false);
-    box.replaceChildren(
+    const again = el('button', { class: 'btn quiet', type: 'button', onclick: () => {
+      readState().then((a) => renderCheck(kind, before, a, null, op)).catch((e) => renderCheck(kind, before, null, e.message, op));
+    } }, 'Read Expenses again');
+    if (err) { box.replaceChildren(el('h3', {}, 'Check it yourself'), el('p', {}, err), again); return; }
+    const list = expectations(kind, before, after);
+    const rows = list.map(([what, b, x, o, ok]) => {
+      const [cls, word] = VERDICT(ok);
+      return el('tr', {}, el('th', { scope: 'row' }, what), el('td', {}, b), el('td', {}, x), el('td', {}, o), el('td', { class: cls }, word));
+    });
+    const allOk = list.every((r) => r[4] !== false);
+    box.replaceChildren(...[ // filtered: replaceChildren would print a null as text
       el('h3', {}, 'Check it yourself'),
       el('p', {}, after.source + ' Read at ' + new Date(after.readAt).toLocaleTimeString() + '. ' +
-        (allOk ? 'Everything the run claimed is what Expenses holds.' : 'At least one value is not what the run claimed. Expenses may still be catching up: refresh the raw read below.')),
+        (allOk ? 'Everything the run claimed is what Expenses holds.' : 'At least one value is not what the run claimed. Expenses may still be catching up: read it again.')),
       el('div', { class: 'checkwrap' }, el('table', {},
         el('thead', {}, el('tr', {}, el('th', {}, 'Expenses holds'), el('th', {}, 'Before'), el('th', {}, 'Expected'), el('th', {}, 'Observed'), el('th', {}, ''))),
         el('tbody', {}, ...rows))),
-      el('p', {}, 'The session at hire is simulated, because nobody signs in as a demo person. What happens to it afterwards is real: Okta\'s SCIM deactivation deletes it. ',
-        el('a', { class: 'raw', href: stateUrl(), target: '_blank', rel: 'noopener' }, 'Open the raw read'), ' and refresh it as often as you like.'));
+      kind === 'offboard' ? el('p', { class: 'ended' }, whoEnded(op, before)) : null,
+      el('p', {}, again, ' ', el('a', { class: 'raw', href: stateUrl(), target: '_blank', rel: 'noopener' }, 'Open the raw read'), ' in another tab and refresh it as often as you like.'),
+    ].filter(Boolean));
+  }
+
+  function copyButton(text) {
+    return el('button', { class: 'btn quiet copy', type: 'button', onclick: (e) => {
+      const b = e.currentTarget;
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(text).then(() => { b.textContent = 'copied'; setTimeout(() => { b.textContent = 'copy'; }, 1500); }).catch(() => {});
+    } }, 'copy');
+  }
+
+  // The login and password are only ever held in this page's memory: never
+  // stored, never put in a URL.
+  function renderSignIn(done) {
+    const box = $('#signin');
+    if (done) {
+      box.hidden = false;
+      box.replaceChildren(el('p', {}, 'Offboarded. That password no longer works, and the account is deleted within a minute or two.'));
+      return;
+    }
+    if (!demo.signIn) { box.hidden = true; box.replaceChildren(); return; }
+    box.hidden = false;
+    box.replaceChildren(
+      el('h3', {}, 'Sign in as them'),
+      el('p', {}, 'Open Glasscliff Expenses in a new tab, choose Sign in with Okta, and use these on Okta\'s page. This account has no MFA. Keep that tab open: after you offboard them below, refresh it.'),
+      el('dl', { class: 'creds' },
+        el('dt', {}, 'Username'), el('dd', {}, el('code', {}, demo.signIn.login), ' ', copyButton(demo.signIn.login)),
+        el('dt', {}, 'Password'), el('dd', {}, el('code', {}, demo.signIn.password), ' ', copyButton(demo.signIn.password))),
+      el('p', {}, el('a', { class: 'btn', href: EXPENSES, target: '_blank', rel: 'noopener' }, 'Open Glasscliff Expenses ↗'),
+        ' Then come back and press Read Expenses again to see your session appear.'));
   }
 
   function expiryText() {
     if (!demo.expiresAt) return '';
     const mins = Math.max(0, Math.round((Date.parse(demo.expiresAt) - Date.now()) / 60000));
-    return mins ? 'This person is deleted automatically in about ' + mins + (mins === 1 ? ' minute.' : ' minutes.') : 'This person is being deleted now.';
+    return mins ? 'This person is offboarded and deleted automatically in about ' + mins + (mins === 1 ? ' minute.' : ' minutes.') : 'This person is being offboarded and deleted now.';
   }
+  setInterval(() => { if (demo.live && !demo.busy) demoNote(expiryText()); }, 30000);
 
   function demoButtons(buttons) {
     const row = $('#try-row');
     row.replaceChildren();
-    for (const b of buttons) row.append(el('button', { class: 'btn' + (b[2] ? ' quiet' : ''), onclick: b[1] }, b[0]));
+    for (const b of buttons) row.append(el('button', { class: 'btn' + (b[2] ? ' quiet' : ''), type: 'button', onclick: b[1] }, b[0]));
   }
 
-  async function demoAct(path, label, after, kind) {
+  async function demoAct(path, label, after, kind, body) {
     if (demo.busy) return;
     demo.busy = true;
     const row = $('#try-row');
-    for (const b of row.querySelectorAll('button')) b.disabled = true;
+    for (const b of row.querySelectorAll('button, input, select')) b.disabled = true;
     demoNote(label);
     let before = null;
     try { before = await readState(); } catch { before = null; }
     try {
-      const out = await send(path, demo.runKey ? { runKey: demo.runKey } : {});
+      const out = await send(path, demo.runKey ? { runKey: demo.runKey } : body || {});
       if (out.runKey) { demo.runKey = out.runKey; demo.expiresAt = out.expiresAt; }
-      readState().then((a) => renderCheck(kind, before, a)).catch((e) => renderCheck(kind, before, null, e.message));
+      if (out.signIn !== undefined) demo.signIn = out.signIn;
+      if (out.role && out.role.title) demo.role = out.role;
+      readState().then((a) => renderCheck(kind, before, a, null, out.operation)).catch((e) => renderCheck(kind, before, null, e.message, out.operation));
       state.mode = 'live';
       for (const b of document.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', String(b.dataset.mode === 'live'));
       state.op = out.operation;
@@ -523,35 +599,55 @@ const CLIENT = String.raw`
       after();
     } catch (err) {
       demoNote(err.message);
-      for (const b of row.querySelectorAll('button')) b.disabled = false;
+      for (const b of row.querySelectorAll('button, input, select')) b.disabled = false;
     } finally {
       demo.busy = false;
     }
   }
 
-  const startButton = () => demoButtons([['Hire someone', () => demoAct('/api/demo/start', 'Creating them in Okta and waiting for Expenses…', () => {
+  function startForm() {
+    const name = el('input', { id: 'try-name', type: 'text', maxlength: '40', autocomplete: 'off', spellcheck: 'false', placeholder: 'Any name, or leave blank' });
+    const fields = [el('span', { class: 'field' }, el('label', { for: 'try-name' }, 'Their name'), name)];
+    let title = null;
+    if (demo.titles.length) {
+      title = el('select', { id: 'try-title' }, ...demo.titles.map((t) => el('option', { value: t }, t)));
+      fields.push(el('span', { class: 'field' }, el('label', { for: 'try-title' }, 'Job title'), title));
+    }
+    const go = el('button', { class: 'btn', type: 'button', onclick: () => demoAct('/api/demo/start', 'Creating them in Okta and waiting for Expenses…', afterHire, 'hire',
+      { name: name.value, ...(title ? { title: title.value } : {}) }) }, 'Create them');
+    $('#try-row').replaceChildren(...fields, go);
+  }
+
+  function afterHire() {
     demo.live = true;
-    demoButtons([['Move them to a new role', moveThem], ['Offboard them', offboardThem, true]]);
-    demoNote(expiryText());
-  }, 'hire')]]);
+    renderSignIn();
+    demoButtons([['Change their title', moveThem], ['Offboard them now', offboardThem, true]]);
+    demoNote(expiryText() + (demo.signIn ? '' : ' This lab is not handing out sign-ins right now, so there will be no session to end.'));
+  }
 
   const moveThem = () => demoAct('/api/demo/move', 'Updating Okta and waiting for the change to reach Expenses…', () => {
-    demoButtons([['Offboard them', offboardThem]]);
-    demoNote(expiryText());
+    demoButtons([['Offboard them now', offboardThem]]);
+    demoNote('Refresh your Expenses tab to see the new title. ' + expiryText());
   }, 'move');
 
-  const offboardThem = () => demoAct('/api/demo/offboard', 'Revoking their access and ending their Expenses session…', () => {
+  const offboardThem = () => demoAct('/api/demo/offboard', 'Deactivating them in Okta and waiting for Expenses…', () => {
     demo.live = false;
-    demoButtons([['Start another', () => { demo.runKey = null; demo.expiresAt = null; $('#check').hidden = true; startButton(); demoNote(''); }]]);
-    demoNote('Okta deactivated them, and its SCIM call ended their Expenses session. The account is deleted shortly.');
+    demo.signIn = null;
+    renderSignIn(true);
+    demoButtons([['Start another', () => {
+      demo.runKey = null; demo.expiresAt = null; demo.role = null; demo.signIn = null;
+      $('#check').hidden = true; renderSignIn(); startForm(); demoNote('');
+    }]]);
+    demoNote('');
   }, 'offboard');
 
   async function setUpDemo() {
     if (!LIVE) return;
     try {
       const limits = await (await fetch(BASE + '/api/demo/limits')).json();
+      demo.titles = Array.isArray(limits.titles) ? limits.titles : [];
       $('#try').hidden = false;
-      if (limits.available) startButton();
+      if (limits.available) startForm();
       else { demoButtons([]); demoNote(limits.reason || 'The demo is busy right now. Try again in a few minutes.'); }
     } catch {
       $('#try').hidden = true;
@@ -571,7 +667,7 @@ const CLIENT = String.raw`
 })();
 `;
 
-function renderPage({ nonce, basePath, liveEnabled, homeHref = '/', cssHref = '/labs/assets/glasscliff.css' }) {
+function renderPage({ nonce, basePath, liveEnabled, homeHref = '/', expensesHref = `${basePath}/expenses/`, cssHref = '/labs/assets/glasscliff.css' }) {
   const attr = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   return `<!DOCTYPE html>
 <html lang="en">
@@ -584,7 +680,7 @@ function renderPage({ nonce, basePath, liveEnabled, homeHref = '/', cssHref = '/
 <link rel="stylesheet" href="${attr(cssHref)}">
 <style nonce="${attr(nonce)}">${CSS}</style>
 </head>
-<body data-base="${attr(basePath)}" data-live="${liveEnabled ? 'true' : 'false'}">
+<body data-base="${attr(basePath)}" data-live="${liveEnabled ? 'true' : 'false'}" data-expenses="${attr(expensesHref)}">
 <a class="skip" href="#main">Skip to content</a>
 <div class="wrap wide">
 
@@ -605,9 +701,10 @@ function renderPage({ nonce, basePath, liveEnabled, homeHref = '/', cssHref = '/
 </section>
 <section class="try" id="try" hidden>
 <h2>Run one yourself</h2>
-<p id="try-lede">Start a throwaway person, move them to a new role, then offboard them. They get a simulated Expenses session at hire, so you can watch offboarding end it. The Okta account and the SCIM calls are real; nobody real is involved, and the account deletes itself.</p>
+<p id="try-lede">Make a throwaway person, sign in to Glasscliff Expenses as them in another tab, then offboard them and watch the session you are using end. The Okta account, the SCIM calls and the sign-in are all real. The person isn't, and the account deletes itself within minutes.</p>
 <div class="row" id="try-row"></div>
-<p class="note" id="try-note"></p>
+<p class="note" id="try-note" aria-live="polite"></p>
+<div class="signin" id="signin" hidden></div>
 <div class="check" id="check" aria-live="polite" hidden></div>
 </section>
 <div class="tabs" role="tablist" aria-label="What to show">

@@ -12,18 +12,19 @@ const { createScenarioSource, loadBundled } = require('../dashboard/scenarios');
 const KEY = 'opk-0123456789abcdef-secret';
 // The real terminate status from 2026-09-20, plus fields that must never pass.
 const REAL = {
-  operationId: '8210082972644-58fba5', type: 'terminate', target: 'DARATMP+cstpc@gmail.com', status: 'succeeded',
-  summary: 'Terminated daratmp+cstpc@gmail.com; access removed', oktaUserId: '00u17so8b72JPMUo7698',
+  operationId: '8210082972644-58fba5', type: 'terminate', target: 'TEST.PERSON@EXAMPLE.TEST', status: 'succeeded',
+  summary: 'Terminated test.person@example.test; access removed', oktaUserId: '00u1exampleuser0demo',
   firstName: 'Morgan', password: 'hunter2', created: '2026-09-20T15:10:27.355Z', updated: '2026-09-20T15:10:34.906Z',
   steps: [
-    { seq: 1, step: 'okta.lookup', outcome: 'succeeded', detail: 'id 00u17so8b72JPMUo7698, status ACTIVE', durationMs: 555, started: '2026-09-20T15:10:27.370Z', userName: 'daratmp+cstpc@gmail.com' },
+    { seq: 1, step: 'okta.lookup', outcome: 'succeeded', detail: 'id 00u1exampleuser0demo, status ACTIVE', durationMs: 555, started: '2026-09-20T15:10:27.370Z', userName: 'test.person@example.test' },
     { seq: 4, step: 'verify.expensesAccountDisabled', outcome: 'succeeded', detail: 'SCIM account 3f2b8c1e-9a0d-4e5f-8a7b-1c2d3e4f5a6b is inactive', durationMs: 6036, started: '2026-09-20T15:10:28.845Z' },
     { seq: 5, step: '<img src=x onerror=alert(1)>', outcome: '<b>', detail: '<script>alert(1)</script> assigned to app 0oa1exampleapp0demo9', durationMs: 7, started: 'not a date' },
   ],
   scim: [{ step: 'scim.patchUser', httpStatus: 200, outcome: 'succeeded', at: '2026-09-20T15:10:32.2662616Z', evidenceBlob: 'scim/2026-09-20/2026-09-20T15-10-32-259Z-PATCH-92393c.json', sessionsEnded: 1 }],
 };
-const HIRE = { operationId: '8210084197900-a1c3e5', type: 'hire', target: 'daratmp+cstpc@gmail.com', status: 'awaiting_scim', summary: 'Hired daratmp+cstpc@gmail.com; waiting', created: '2026-09-20T14:50:02.100Z', updated: '2026-09-20T14:50:09.285Z', steps: [], scim: [] };
-const LEAKS = /@|00u17so8|0oa1exampleapp|3f2b8c1e|evidenceBlob|scim\/2026|hunter2|Morgan|password|oktaUserId|firstName|<script|onerror|opk-/i;
+const HIRE = { operationId: '8210084197900-a1c3e5', type: 'hire', target: 'test.person@example.test', status: 'awaiting_scim', summary: 'Hired test.person@example.test; waiting', created: '2026-09-20T14:50:02.100Z', updated: '2026-09-20T14:50:09.285Z', steps: [], scim: [] };
+// "password" is a leak, but PASSWORD_EXPIRED is an Okta account status, not a credential.
+const LEAKS = /@|00u1exampleuser|0oa1exampleapp|3f2b8c1e|evidenceBlob|scim\/2026|hunter2|Morgan|password(?!_expired)|oktaUserId|firstName|<script|onerror|opk-/i;
 
 const listen = (app) => new Promise((r) => { const s = http.createServer(app).listen(0, '127.0.0.1', () => r(s)); });
 
@@ -210,7 +211,8 @@ function fakeFetch(state) {
 
   // ---- demo proxy --------------------------------------------------------
   const demoCalls = [];
-  const demoState = { limits: { available: true, ttlMinutes: 30 }, hire: null, fail: null };
+  const PASSWORD = 'Kq7m-Rt4x-Bn8p-Wd3h';
+  const demoState = { limits: { available: true, ttlMinutes: 30 }, hire: null, fail: null, login: 'demo-abc123@demo.glasscliff.online', password: PASSWORD };
   const demoFetch = async (url, opts = {}) => {
     const u = new URL(url);
     demoCalls.push([opts.method || 'GET', u.pathname, opts.body ? JSON.parse(opts.body) : null]);
@@ -218,10 +220,10 @@ function fakeFetch(state) {
     if (u.pathname.endsWith('/demo/limits')) return Response.json(demoState.limits);
     if (demoState.fail) return new Response(JSON.stringify({ error: demoState.fail.error }), { status: demoState.fail.status });
     if (u.pathname.endsWith('/demo/hire')) {
-      demoState.hire = { ...REAL, operationId: '8210099999999-aaaaaa', type: 'hire', target: 'demo-abc123@demo.glasscliff.online', summary: 'Hired demo-abc123@demo.glasscliff.online', demo: { login: 'demo-abc123@demo.glasscliff.online', expiresAt: new Date(Date.now() + 1800_000).toISOString(), ttlMinutes: 30 } };
+      demoState.hire = { ...REAL, operationId: '8210099999999-aaaaaa', type: 'hire', target: demoState.login, summary: `Hired ${demoState.login}`, demo: { login: demoState.login, password: demoState.password, title: 'Designer', department: 'Product', expiresAt: new Date(Date.now() + 1800_000).toISOString(), ttlMinutes: 30 } };
       return Response.json(demoState.hire);
     }
-    return Response.json({ ...REAL, demo: { login: 'demo-abc123@demo.glasscliff.online', expiresAt: new Date(Date.now() + 1800_000).toISOString() } });
+    return Response.json({ ...REAL, demo: { login: 'demo-abc123@demo.glasscliff.online', expiresAt: new Date(Date.now() + 1800_000).toISOString(), ...(u.pathname.endsWith('/demo/transfer') && { title: 'Senior Designer', department: 'Operations' }) } });
   };
   const demoApp = express();
   // What Expenses holds for the demo person, as the readback would find it in
@@ -241,15 +243,75 @@ function fakeFetch(state) {
   };
 
   let runKey;
-  await t('starting a demo returns a masked run and an opaque key', async () => {
-    const { r, body } = await post('/api/demo/start');
+  await t('starting a demo returns a masked run, an opaque key, and a sign-in for that visitor only', async () => {
+    logs.length = 0;
+    const { r, body } = await post('/api/demo/start', { name: 'Ada Lovelace', title: 'Designer' });
     assert.equal(r.status, 200);
     runKey = body.runKey;
     assert.ok(runKey);
-    const text = JSON.stringify(body);
-    assert.doesNotMatch(text, /demo-abc123@|daratmp|00u17so8/, 'no login or ids reach the browser');
+    assert.equal(r.headers.get('cache-control'), 'no-store');
+    // The one place a login is allowed: the sign-in handed to the visitor who started it.
+    assert.deepEqual(body.signIn, { login: 'demo-abc123@demo.glasscliff.online', password: PASSWORD });
+    assert.deepEqual(body.role, { title: 'Designer', department: 'Product' });
+    const rest = JSON.stringify({ ...body, signIn: undefined });
+    assert.doesNotMatch(rest, /demo-abc123@|test\.person|00u1exampleuser|Kq7m/, 'nothing else carries the login, ids or password');
     assert.match(body.operation.person, /^person-[0-9a-f]{6}$/);
-    assert.equal(demoCalls.filter((c) => c[1].endsWith('/demo/hire')).length, 1);
+    const hire = demoCalls.filter((c) => c[1].endsWith('/demo/hire'));
+    assert.equal(hire.length, 1);
+    assert.deepEqual(hire[0][2], { name: 'Ada Lovelace', title: 'Designer' }, 'only the name and title are forwarded');
+    assert.ok(!logs.join('\n').includes(PASSWORD), 'the password is never logged');
+    assert.ok(!logs.join('\n').includes('demo-abc123@'), 'nor the login');
+  });
+
+  await t('the sign-in never shows up anywhere else', async () => {
+    const ops = await (await fetch(D + '/api/operations')).text();
+    const state = await (await fetch(`${D}/api/demo/state?run=${encodeURIComponent(runKey)}`, { headers: { 'x-forwarded-for': '203.0.113.31' } })).text();
+    for (const text of [ops, state]) {
+      assert.ok(!text.includes(PASSWORD));
+      assert.doesNotMatch(text, /demo-abc123@/);
+    }
+  });
+
+  await t('names and titles outside the rules are refused before the lifecycle API is asked', async () => {
+    demoCalls.length = 0;
+    for (const [i, body] of [{ name: '<img src=x>' }, { name: 'a@b.example' }, { name: 'x'.repeat(41) }, { title: '<b>CEO</b>' }].entries()) {
+      const { r } = await post('/api/demo/start', body, `203.0.113.${60 + i}`);
+      assert.equal(r.status, 400, JSON.stringify(body));
+    }
+    assert.equal(demoCalls.filter((c) => c[1].endsWith('/demo/hire')).length, 0);
+  });
+
+  await t("the lifecycle API's own refusal comes through as a 400", async () => {
+    demoState.fail = { status: 400, error: 'Pick one of the job titles on the list.' };
+    const { r, body } = await post('/api/demo/start', { title: 'Astronaut' }, '203.0.113.70');
+    demoState.fail = null;
+    assert.equal(r.status, 400);
+    assert.match(body.error, /job titles/);
+  });
+
+  await t('a hire that returns something other than a demo login is not handed to the browser', async () => {
+    demoState.login = 'ceo@glasscliff.online';
+    const { r, body } = await post('/api/demo/start', {}, '203.0.113.71');
+    demoState.login = 'demo-abc123@demo.glasscliff.online';
+    assert.equal(r.status, 502);
+    assert.equal(body.signIn, undefined);
+    assert.doesNotMatch(JSON.stringify(body), /ceo@/);
+  });
+
+  await t('an odd password from upstream is dropped rather than shown', async () => {
+    demoState.password = 'short';
+    const { r, body } = await post('/api/demo/start', {}, '203.0.113.72');
+    demoState.password = PASSWORD;
+    assert.equal(r.status, 200);
+    assert.equal(body.signIn, null);
+  });
+
+  await t('limits pass the title list through, and nothing else from it', async () => {
+    demoState.limits = { available: true, ttlMinutes: 8, titles: ['Analyst', 'Software Engineer', '<b>x</b>', 42], signIn: true };
+    const body = await (await fetch(D + '/api/demo/limits', { headers: { 'x-forwarded-for': '203.0.113.73' } })).json();
+    demoState.limits = { available: true, ttlMinutes: 30 };
+    assert.deepEqual(body.titles, ['Analyst', 'Software Engineer']);
+    assert.equal(body.signIn, true);
   });
 
   await t('the browser cannot aim a move or an offboard at a real person', async () => {
@@ -265,7 +327,10 @@ function fakeFetch(state) {
 
   await t('a valid run key moves and offboards that demo person only', async () => {
     demoCalls.length = 0;
-    assert.equal((await post('/api/demo/move', { runKey })).r.status, 200);
+    const moved = await post('/api/demo/move', { runKey });
+    assert.equal(moved.r.status, 200);
+    assert.deepEqual(moved.body.role, { title: 'Senior Designer', department: 'Operations' });
+    assert.equal(moved.body.signIn, undefined, 'only the start response carries a sign-in');
     assert.equal((await post('/api/demo/offboard', { runKey })).r.status, 200);
     for (const call of demoCalls) assert.equal(call[2].login, 'demo-abc123@demo.glasscliff.online');
   });
