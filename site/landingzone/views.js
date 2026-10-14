@@ -85,7 +85,7 @@ function landingZonePage({ overview, basePath, choice, result }) {
   return `<section class="hero">
 <h1>Azure landing zone</h1>
 <p>Before anything runs in Azure, there's a platform underneath it: where subscriptions sit, what they're allowed to do, where their logs go and what they're allowed to cost. This is a miniature version of that, governing the identity lab next door.</p>
-<p class="byline"><a href="${esc(basePath)}/about">About this landing zone</a></p>
+<p class="byline"><a href="${esc(basePath)}/about">About this landing zone</a> · <a href="https://github.com/Spiiike/iamdash/tree/main/glasscliff-landing-zone">Bicep source</a></p>
 </section>
 
 <section class="section">

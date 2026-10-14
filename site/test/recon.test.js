@@ -185,6 +185,13 @@ const CFG = {
     assert.ok(html.includes('>agrees<'), 'a plain clean row should read agrees');
   });
 
+  await t('runbook sections link to the matching part of the rules page', async () => {
+    const masked = maskSnapshot(RAW(), { pseudonym: masker.pseudonym });
+    const html = reconPage(masked, { now: Date.parse('2026-10-12T18:40:00Z') });
+    assert.match(html, /href="https:\/\/github\.com\/Spiiike\/iamdash\/blob\/main\/functions\/src\/lib\/recon\/README\.md#section-9-presence-and-access">runbook §9<\/a>/);
+    assert.match(html, /README\.md#section-2-join-key-and-anchor">runbook §2<\/a>/);
+  });
+
   await t('a clean run says so instead of listing disagreements', async () => {
     const raw = RAW();
     raw.summary = { ...raw.summary, verdict: 'clean', actionable: 0, worst: 'none', agreeing: 3 };
@@ -244,7 +251,7 @@ const CFG = {
     const r = await fetch(`${B}/`);
     const html = await r.text();
     assert.equal(r.status, 200);
-    assert.ok(html.includes('did not finish'), 'stale notice should be shown');
+    assert.ok(html.includes("couldn't fetch the latest result"), 'stale notice should be shown');
     assert.ok(html.includes('Account by account'), 'and the previous result kept');
   });
 

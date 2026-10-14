@@ -51,10 +51,25 @@ function directoryCell(entry, qualifier, label) {
   return `<td class="dir"${l}><span class="state ${cls}">${word}</span>${note}</td>`;
 }
 
+// The section numbers come from my build runbook, which isn't public. The rules
+// page in the repo says what each section covers, so I link there instead.
+const RULES_DOC = 'https://github.com/Spiiike/iamdash/blob/main/functions/src/lib/recon/README.md';
+const SECTION_ANCHOR = {
+  '§2': 'section-2-join-key-and-anchor',
+  '§4': 'section-4-attributes-and-ou-placement',
+  '§5': 'section-5-provisioning',
+  '§6': 'section-6-accepted-exceptions',
+  '§8': 'section-8-accounts-in-sso-scope-with-no-okta-identity',
+  '§9': 'section-9-presence-and-access',
+};
+
 function findingLine(f) {
   const cls = SEVERITY_CLASS[f.severity] || 'dim';
   const word = SEVERITY_WORD[f.severity] || f.severity;
-  const ref = f.section ? ` <span class="ref">runbook ${esc(f.section)}</span>` : '';
+  const anchor = SECTION_ANCHOR[f.section];
+  const ref = !f.section ? ''
+    : anchor ? ` <a class="ref" href="${RULES_DOC}#${anchor}">runbook ${esc(f.section)}</a>`
+    : ` <span class="ref">runbook ${esc(f.section)}</span>`;
   return (
     `<li><span class="state ${cls}">${esc(word)}</span>` +
     `<span class="f-text">${esc(f.detail)}` +
@@ -243,7 +258,7 @@ function reconPage(snapshot, opts = {}) {
     : '';
 
   const stale = snapshot.stale
-    ? `<p class="stale">The last scheduled run did not finish, so this is the previous result. Nothing is published from a partial read.</p>`
+    ? `<p class="stale">This page couldn't fetch the latest result just now, so it's showing the one it fetched before. The run history below shows whether the scheduled runs themselves are finishing.</p>`
     : '';
 
   return `
@@ -262,6 +277,7 @@ function reconPage(snapshot, opts = {}) {
       </p>
       ${stale}
       ${latestAttemptNote(snapshot)}
+      <p class="byline"><a href="https://github.com/Spiiike/iamdash/blob/main/functions/src/lib/recon/README.md">The rules and what each finding means</a> · <a href="https://github.com/Spiiike/iamdash/tree/main/functions/test/recon">Their tests</a></p>
     </section>
 
     <p class="verdict"><span class="state ${verdictClass}">${esc(verdictLine)}</span></p>

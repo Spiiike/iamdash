@@ -59,8 +59,14 @@ async function fetchOkta({ orgUrl, token, entraAppId, googleAppId, fetchImpl = f
   if (!orgUrl || !token) throw new Error('okta: orgUrl and token are required');
   const base = orgUrl.replace(/\/$/, '');
 
-  const [users, entraAssigned, googleAssigned] = await Promise.all([
+  // Okta's plain user list leaves out DEPROVISIONED users, which is what every
+  // person I offboard becomes. Without the second query a leaver looks like they
+  // never existed in Okta: access_not_revoked can't fire for them, and their
+  // disabled Entra and Google accounts get reported as orphans instead.
+  const deprovisioned = encodeURIComponent('status eq "DEPROVISIONED"');
+  const [listed, gone, entraAssigned, googleAssigned] = await Promise.all([
     getAllPages(`${base}/api/v1/users?limit=200`, token, { fetchImpl }),
+    getAllPages(`${base}/api/v1/users?limit=200&filter=${deprovisioned}`, token, { fetchImpl }),
     entraAppId
       ? getAllPages(`${base}/api/v1/apps/${entraAppId}/users?limit=200`, token, { fetchImpl })
       : Promise.resolve([]),
@@ -72,6 +78,9 @@ async function fetchOkta({ orgUrl, token, entraAppId, googleAppId, fetchImpl = f
   const entraSet = new Set(entraAssigned.map((au) => joinKey(au.credentials?.userName || au.externalId)));
   const googleSet = new Set(googleAssigned.map((au) => joinKey(au.credentials?.userName || au.externalId)));
 
+  // The two lists shouldn't overlap, but a user deactivated between the two
+  // requests could appear in both, so I keep one record per Okta id.
+  const users = [...new Map([...listed, ...gone].map((u) => [u.id, u])).values()];
   return users.map((u) => normaliseOktaUser(u, { entraSet, googleSet }));
 }
 

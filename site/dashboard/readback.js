@@ -20,7 +20,7 @@ const { createTableStore } = require('../expenses/store');
 
 const SOURCE =
   'Read by this site directly from the Glasscliff Expenses database (Accounts and Sessions tables) ' +
-  "with the site's own read-only identity. The lifecycle API that ran the change is not involved.";
+  "with the site's own identity, which can read Accounts but not change them. The lifecycle API that ran the change is not involved.";
 
 function createReadback({ store, log = console, now = () => Date.now() } = {}) {
   let tables = store || null;
